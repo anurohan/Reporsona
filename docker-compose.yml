@@ -1,0 +1,54 @@
+# RePersona — local orchestration.
+# Demo Mode runs fully offline: the backend seeds a ready "Osho" persona using
+# the bundled synthetic corpus and the deterministic demo generator. Postgres is
+# included so you can exercise the production database path; SQLite is the
+# zero-config default if you drop the db service and unset DATABASE_URL.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: repersona
+      POSTGRES_PASSWORD: repersona
+      POSTGRES_DB: repersona
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U repersona"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DEMO_MODE: "true"
+      LLM_PROVIDER: "demo"
+      VECTOR_DB: "memory"
+      DATABASE_URL: "postgresql+psycopg2://repersona:repersona@db:5432/repersona"
+      CORS_ORIGINS: "http://localhost:3000"
+    ports:
+      - "8000:8000"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_BASE: "http://localhost:8000"
+    ports:
+      - "3000:3000"
+
+  # Optional: uncomment to back a Celery/RQ worker deployment.
+  # redis:
+  #   image: redis:7-alpine
+  #   ports: ["6379:6379"]
+
+volumes:
+  pgdata:

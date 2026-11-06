@@ -1,0 +1,23 @@
+# FULL-POWER dependencies (optional). Installs the heavy AI stack on top of the
+# light demo requirements. This is a large download (torch etc., ~2-3 GB).
+#
+# Install with:  INSTALL_FULL.bat   (or: pip install -r requirements-full.txt)
+#
+# After installing + restarting the backend, RePersona automatically switches to:
+#   - real semantic embeddings (sentence-transformers)  [VECTOR_DB stays faiss]
+#   - FAISS vector index
+#   - Whisper transcription for uploaded audio/video
+#   - OCR for uploaded images (also needs the Tesseract binary — see notes)
+
+-r requirements.txt
+
+# Semantic embeddings + vector search
+sentence-transformers
+faiss-cpu
+numpy
+
+# Speech-to-text (Whisper) + PDF/image handling
+faster-whisper
+pypdf
+pillow
+pytesseract

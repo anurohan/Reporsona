@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-void-950 text-slate-200 antialiased;
+  background-image: radial-gradient(
+      ellipse at 15% -10%,
+      rgba(90, 75, 255, 0.22),
+      transparent 55%
+    ),
+    radial-gradient(ellipse at 92% 8%, rgba(94, 231, 242, 0.12), transparent 50%),
+    linear-gradient(180deg, #05060f 0%, #0a0b1a 60%, #05060f 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+@layer components {
+  .glass {
+    @apply border border-white/10 bg-white/[0.045] backdrop-blur-xl;
+  }
+  .glass-strong {
+    @apply border border-white/10 bg-white/[0.08] backdrop-blur-2xl;
+  }
+  .glass-panel {
+    @apply glass rounded-2xl shadow-[0_8px_40px_-12px_rgba(0,0,0,0.6)];
+  }
+  .glow-ring {
+    box-shadow: 0 0 0 1px rgba(139, 147, 255, 0.25),
+      0 0 40px -8px rgba(122, 114, 255, 0.5);
+  }
+  .text-gradient {
+    @apply bg-gradient-to-r from-indigoGlow-400 via-accent-violet to-accent-cyan bg-clip-text text-transparent;
+  }
+  .hairline {
+    @apply border-white/10;
+  }
+  .focusable {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-indigoGlow-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-void-950;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-slate-300;
+  }
+}
+
+@layer utilities {
+  .bg-space-gradient {
+    background-image: radial-gradient(
+        ellipse at 20% -10%,
+        rgba(90, 75, 255, 0.25),
+        transparent 55%
+      ),
+      radial-gradient(ellipse at 90% 10%, rgba(94, 231, 242, 0.14), transparent 50%),
+      linear-gradient(180deg, #05060f 0%, #0a0b1a 100%);
+  }
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.04) 25%,
+      rgba(255, 255, 255, 0.1) 37%,
+      rgba(255, 255, 255, 0.04) 63%
+    );
+    background-size: 400% 100%;
+    @apply animate-shimmer;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Custom scrollbars for panels */
+.scroll-slim::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scroll-slim::-webkit-scrollbar-thumb {
+  background: rgba(139, 147, 255, 0.25);
+  border-radius: 8px;
+}
+.scroll-slim::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Respect reduced-motion preference across the app. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

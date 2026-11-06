@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.db
+data/
+.pytest_cache/
+
+# Node / Next
+node_modules/
+.next/
+out/
+dist/
+npm-debug.log*
+
+# Env / secrets
+.env
+.env.local
+*.local
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Generated TypeScript build metadata
+*.tsbuildinfo
+
+# Local diagnostic output
+diagnose_report.txt
