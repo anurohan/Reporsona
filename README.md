@@ -159,3 +159,11 @@ Profiles and coverage estimates can be incomplete or inaccurate, especially when
 - [Architecture and API design](./ARCHITECTURE.md)
 - [Backend configuration reference](./backend/.env.example)
 - [Frontend configuration example](./frontend/.env.example)
+
+## Contributors
+
+- anurohan
+
+## Contributing
+
+This project is maintained by anurohan. Contributions, issues, and pull requests are welcome.
