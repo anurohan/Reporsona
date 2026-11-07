@@ -23,6 +23,20 @@ body {
   background-attachment: fixed;
   min-height: 100vh;
   font-family: "Inter", system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+::selection { background: rgba(139, 147, 255, 0.35); color: #fff; }
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  mix-blend-mode: soft-light;
 }
 
 @layer components {
@@ -51,6 +65,29 @@ body {
   .chip {
     @apply inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-slate-300;
   }
+  .app-header {
+    @apply fixed left-0 right-0 top-0 z-40 mx-auto flex h-[72px] items-center gap-6 px-5 sm:px-8 lg:px-12;
+    background: linear-gradient(180deg, rgba(5, 6, 15, .92), rgba(5, 6, 15, .42), transparent);
+    backdrop-filter: blur(14px);
+  }
+  .brand-mark { @apply inline-flex items-center gap-2.5 text-white; }
+  .brand-mark__icon { @apply flex h-8 w-8 items-center justify-center rounded-xl border border-indigoGlow-400/35 bg-indigoGlow-600/15 text-indigoGlow-400 shadow-glow; }
+  .brand-mark__text { @apply font-display text-sm font-bold tracking-[.18em]; }
+  .brand-mark__text span { @apply text-indigoGlow-400; }
+  .header-link { @apply rounded-full px-3 py-2 text-xs text-slate-400 transition-colors hover:bg-white/5 hover:text-white; }
+  .status-dot { @apply items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/[.06] px-3 py-1.5 text-[10px] uppercase tracking-[.14em] text-emerald-300/80; }
+  .status-dot i { @apply h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,.9)]; }
+  .command-pill { @apply hidden items-center gap-2 rounded-full border border-white/10 bg-white/[.04] px-3 py-2 text-xs text-slate-400 transition-colors hover:border-white/20 hover:bg-white/[.08] hover:text-white sm:inline-flex; }
+  .command-pill kbd { @apply rounded border border-white/10 px-1.5 py-0.5 font-sans text-[10px] text-slate-500; }
+  .header-cta { @apply hidden items-center gap-1.5 rounded-full border border-white/15 bg-white/[.06] px-3.5 py-2 text-xs font-medium text-white transition-all hover:border-indigoGlow-400/50 hover:bg-indigoGlow-600/15 sm:inline-flex; }
+  .eyebrow { @apply inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[.24em] text-indigoGlow-400; }
+  .eyebrow::before { content: ""; @apply h-px w-7 bg-indigoGlow-400/70; }
+  .display-title { @apply font-display font-medium leading-[.94] tracking-[-.065em] text-white; }
+  .hero-grid { background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); background-size: 72px 72px; mask-image: linear-gradient(to bottom, black, transparent 82%); }
+  .feature-card { @apply glass-panel relative overflow-hidden p-5 transition-all duration-500 hover:-translate-y-1 hover:border-indigoGlow-400/30 hover:shadow-glow; }
+  .feature-card::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 100% 0, rgba(139,147,255,.14), transparent 42%); opacity: 0; transition: opacity .5s; }
+  .feature-card:hover::after { opacity: 1; }
+  .number-chip { @apply flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[.05] font-display text-xs text-indigoGlow-400; }
 }
 
 @layer utilities {

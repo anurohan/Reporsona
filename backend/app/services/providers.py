@@ -102,6 +102,21 @@ def _youtube_status() -> ProviderStatus:
     )
 
 
+def _news_status() -> ProviderStatus:
+    configured = bool((getattr(settings, "news_api_key", "") or "").strip())
+    return ProviderStatus(
+        key="news", label="News cross-check",
+        configured=configured,
+        mode="NewsAPI" if configured else "Not configured",
+        detail=(
+            "NewsAPI supplements live answers with independently indexed news links."
+            if configured
+            else "Set NEWS_API_KEY to add a second live-news source to current answers."
+        ),
+        docs="https://newsapi.org",
+    )
+
+
 def _sources_status() -> ProviderStatus:
     mode = (settings.source_mode or "auto").lower()
     live = mode in ("auto", "wikipedia")
@@ -143,6 +158,7 @@ def provider_statuses() -> List[ProviderStatus]:
         _sources_status(),
         _web_search_status(),
         _youtube_status(),
+        _news_status(),
         _llm_status(),
         _embeddings_status(),
     ]

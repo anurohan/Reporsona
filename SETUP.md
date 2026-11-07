@@ -91,6 +91,12 @@ they are read server-side and never exposed to the frontend.
 
 No key is *required*: the app is fully functional in local/demo mode.
 
+### Temporal guardrails and live current-context
+
+RePersona now evaluates whether a question is asking for historical memory, present-day events, or a hypothetical projection. For deceased figures, the knowledge cutoff is bound to the documented lifespan, and any post-cutoff or current-event question is routed to the live web search path. This prevents the app from pretending a historical figure had knowledge they did not have.
+
+If `SEARCH_PROVIDER` and `SEARCH_API_KEY` are configured, the app retrieves fresh current-context results through Tavily or SerpAPI (optionally cross-checked via NewsAPI). If they are not configured, the app surfaces the unavailable state and keeps the answer honest instead of fabricating missing current facts.
+
 ## 7. Database & migrations
 
 Demo uses SQLite created on startup (`init_db()` → `create_all`). For PostgreSQL:

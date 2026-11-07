@@ -24,6 +24,7 @@ import {
 import type { IdentityCandidate, PersonaSummary, Resolution } from "@/lib/types";
 import PersonaImage from "@/components/PersonaImage";
 import EthicalNotice from "@/components/EthicalNotice";
+import AppHeader from "@/components/AppHeader";
 
 const BackgroundScene = dynamic(
   () => import("@/components/three/BackgroundScene"),
@@ -160,31 +161,33 @@ function ExploreInner() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden px-6 pb-28 pt-16">
+    <main className="relative min-h-screen overflow-hidden px-5 pb-28 pt-28 sm:px-8">
       <BackgroundScene intensity="subtle" />
+      <AppHeader compact />
 
-      <div className="relative z-10 mx-auto max-w-4xl">
+      <div className="relative z-10 mx-auto max-w-5xl">
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-center"
+          className="mx-auto max-w-3xl text-center"
         >
-          <h1 className="font-display text-3xl font-bold text-white sm:text-4xl">
-            Who would you like to explore?
+          <div className="eyebrow justify-center before:hidden">The archive / new inquiry</div>
+          <h1 className="display-title mt-5 text-5xl sm:text-7xl">
+            Find a mind worth <span className="text-gradient">meeting.</span>
           </h1>
-          <p className="mt-3 text-sm text-slate-400">
-            Name any documented person. RePersona will gather and process public
-            material, or use a bundled demo corpus.
+          <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-slate-400 sm:text-base">
+            Search the public record, or open a private demo. RePersona gathers
+            material, maps the worldview and keeps every answer close to its source.
           </p>
         </motion.div>
 
         {/* Search + actions */}
-        <div className="glass-panel mx-auto mt-8 max-w-2xl p-4">
+        <div className="glass-panel mx-auto mt-10 max-w-3xl border-white/15 bg-[#0a0c1c]/70 p-3 shadow-[0_25px_80px_-25px_rgba(70,65,220,.55)] sm:p-5">
           <label htmlFor="persona-name" className="sr-only">
             Persona name
           </label>
-          <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3">
+            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.045] px-4 focus-within:border-indigoGlow-400/50 focus-within:bg-indigoGlow-600/[.06]">
             <Search className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
             <input
               id="persona-name"
@@ -194,11 +197,11 @@ function ExploreInner() {
                 if (e.key === "Enter") runResolve(name);
               }}
               placeholder="e.g. Osho, Albert Einstein…"
-              className="focusable w-full bg-transparent py-3 text-base text-white placeholder:text-slate-500"
+              className="focusable w-full bg-transparent py-4 text-base text-white placeholder:text-slate-500"
             />
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2 px-1">
             {SUGGESTIONS.map((s) => (
               <button
                 key={s}
@@ -207,7 +210,7 @@ function ExploreInner() {
                   setName(s);
                   setSelected(s);
                 }}
-                className={`focusable chip transition-colors hover:border-indigoGlow-400/50 hover:text-white ${
+                className={`focusable chip transition-all hover:-translate-y-0.5 hover:border-indigoGlow-400/50 hover:text-white ${
                   selected === s
                     ? "border-indigoGlow-400/60 bg-indigoGlow-600/15 text-white"
                     : ""
@@ -219,12 +222,12 @@ function ExploreInner() {
             ))}
           </div>
 
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <div className="mt-5 grid gap-2 sm:grid-cols-3">
             <button
               type="button"
               onClick={() => runResolve(name)}
               disabled={creating || resolving || !name.trim()}
-              className="focusable inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-slate-200 transition-colors hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-40"
+              className="focusable inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-slate-200 transition-all hover:-translate-y-0.5 hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {resolving ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -237,7 +240,7 @@ function ExploreInner() {
               type="button"
               onClick={() => startCreate(name, false)}
               disabled={creating || resolving || !name.trim()}
-              className="focusable inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigoGlow-600 to-accent-violet px-4 py-3 text-sm font-medium text-white shadow-glow transition-shadow hover:shadow-glow-lg disabled:cursor-not-allowed disabled:opacity-40"
+              className="focusable inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigoGlow-600 to-accent-violet px-4 py-3 text-sm font-medium text-white shadow-glow transition-all hover:-translate-y-0.5 hover:shadow-glow-lg disabled:cursor-not-allowed disabled:opacity-40"
             >
               {creating ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -250,7 +253,7 @@ function ExploreInner() {
               type="button"
               onClick={() => startCreate(name || "Osho", true)}
               disabled={creating || resolving}
-              className="focusable inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-indigoGlow-400/40 bg-indigoGlow-600/10 px-4 py-3 text-sm text-indigoGlow-400 transition-colors hover:bg-indigoGlow-600/20 disabled:opacity-40"
+              className="focusable inline-flex items-center justify-center gap-2 rounded-xl border border-indigoGlow-400/40 bg-indigoGlow-600/10 px-4 py-3 text-sm text-indigoGlow-400 transition-all hover:-translate-y-0.5 hover:bg-indigoGlow-600/20 disabled:opacity-40"
             >
               <Sparkles className="h-4 w-4" aria-hidden />
               Use Demo Persona
@@ -269,9 +272,10 @@ function ExploreInner() {
 
         {/* Existing personas */}
         <section className="mt-12">
-          <h2 className="mb-4 font-display text-sm uppercase tracking-[0.2em] text-slate-400">
-            Existing personas
-          </h2>
+          <div className="mb-4 flex items-end justify-between gap-4">
+            <div><div className="eyebrow text-slate-500 before:bg-slate-600">Your archive</div><h2 className="mt-2 font-display text-xl text-white">Existing personas</h2></div>
+            <span className="hidden text-xs text-slate-500 sm:block">Select a record to continue the conversation</span>
+          </div>
 
           {listError && (
             <div className="glass-panel flex items-center justify-between px-4 py-3 text-sm text-rose-200">
@@ -287,7 +291,7 @@ function ExploreInner() {
           )}
 
           {!listError && personas === null && (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               {[0, 1, 2, 3].map((i) => (
                 <div key={i} className="glass-panel h-24 p-4">
                   <div className="h-full w-full rounded-lg shimmer" />
@@ -311,7 +315,7 @@ function ExploreInner() {
                 return (
                   <div
                     key={p.id}
-                    className={`group glass-panel relative flex items-center gap-4 p-4 transition-all ${
+                      className={`group glass-panel relative flex items-center gap-4 p-5 transition-all ${
                       ready
                         ? "hover:border-indigoGlow-400/40 hover:shadow-glow"
                         : "opacity-70"

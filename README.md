@@ -11,6 +11,8 @@
 - Builds a profile, documented timeline, knowledge graph, source collection, and estimated knowledge coverage.
 - Streams build progress through a 15-stage pipeline.
 - Supports Evidence, Persona Simulation, Historical, and Current Context + Persona answer modes.
+- Detects when a question requires present-day knowledge and routes it to live web search rather than the historical corpus.
+- Applies temporal guardrails with knowledge cutoffs so the app does not claim a deceased person could have known a later event.
 - Shows evidence, source details, temporal context, and reasoning information alongside responses.
 - Labels simulated responses separately from verified historical quotations and guards against attributing later events to deceased people.
 - Supports adding text and uploading documents or media for ingestion; OCR, PDF extraction, and audio/video transcription require optional dependencies.
@@ -19,6 +21,12 @@
 ## How it works
 
 The Next.js frontend calls a FastAPI backend over JSON REST endpoints and Server-Sent Events. The backend discovers or accepts sources, extracts and chunks text, analyzes the material, indexes it for retrieval, and generates answers with source evidence. SQLite and lightweight offline components are suitable for local development; PostgreSQL, hosted or local LLMs, neural embeddings, and external discovery providers are optional.
+
+### Reality guardrails and current-context retrieval
+
+The current build adds a temporal-safety layer that classifies whether a question is historical, present-day, or a hypothetical projection. If a question references events after a person's known lifespan or asks for "what is happening now," the system switches to a Current Context + Persona mode and requires fresh external facts from a configured live search provider. If no provider is configured, RePersona clearly reports that current-context data is unavailable instead of inventing facts.
+
+This boundary is enforced in the backend services responsible for temporal analysis and current-context retrieval, and it is surfaced in the UI as source-aware answer labels, knowledge cutoff metadata, and provider status information.
 
 ## Requirements
 

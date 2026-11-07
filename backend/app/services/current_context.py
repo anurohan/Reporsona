@@ -111,6 +111,11 @@ def is_configured() -> bool:
     return _provider_name() in ("tavily", "serpapi") and bool(settings.search_api_key)
 
 
+def is_news_configured() -> bool:
+    """True when the optional NewsAPI cross-check source is available."""
+    return bool((getattr(settings, "news_api_key", "") or "").strip())
+
+
 # --------------------------------------------------------------------------- #
 # Provider calls (current-context flavour: raw query, recency-biased)
 # --------------------------------------------------------------------------- #
@@ -198,6 +203,72 @@ def _serpapi(query: str, limit: int) -> CurrentContextResult:
                                 note=f"SerpAPI returned {len(items)} live results.")
 
 
+def _newsapi(query: str, limit: int) -> CurrentContextResult:
+    """Fetch a second, independently indexed news view when configured.
+
+    NewsAPI's free developer tier may have delayed coverage. The returned items
+    stay explicitly labelled as NewsAPI results, so the response never implies
+    real-time verification beyond what the provider supplied.
+    """
+    params = {
+        "apiKey": settings.news_api_key,
+        "q": query,
+        "language": "en",
+        "sortBy": "publishedAt",
+        "pageSize": max(1, min(limit, 10)),
+    }
+    try:
+        with httpx.Client(timeout=_TIMEOUT, headers={"User-Agent": _UA}) as c:
+            r = c.get("https://newsapi.org/v2/everything", params=params)
+            r.raise_for_status()
+            data = r.json()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("NewsAPI current-context search failed: %s", exc)
+        return CurrentContextResult(status="error", provider="newsapi",
+                                    note=f"NewsAPI request failed: {exc}")
+
+    retrieved = _now_iso()
+    items: List[CurrentContextItem] = []
+    for rank, it in enumerate(data.get("articles") or []):
+        url = it.get("url") or ""
+        snippet = (it.get("description") or it.get("content") or "").strip()
+        if not url or not snippet:
+            continue
+        source = (it.get("source") or {}).get("name") or _domain(url)
+        items.append(CurrentContextItem(
+            title=it.get("title") or _domain(url) or "News result",
+            url=url,
+            domain=_domain(url),
+            source=source,
+            publication_date=(it.get("publishedAt") or "")[:10],
+            retrieved_at=retrieved,
+            snippet=snippet,
+            relevance=round(0.92 - rank * 0.08, 4),
+        ))
+    status = "ok" if items else "empty"
+    return CurrentContextResult(status=status, provider="newsapi", items=items,
+                                note=f"NewsAPI returned {len(items)} cross-check results.")
+
+
+def _dedupe_items(items: List[CurrentContextItem], limit: int) -> List[CurrentContextItem]:
+    """Keep diverse source domains and drop duplicate URLs/titles."""
+    unique: List[CurrentContextItem] = []
+    seen_urls: set[str] = set()
+    seen_titles: set[str] = set()
+    for item in sorted(items, key=lambda row: row.relevance, reverse=True):
+        url = (item.url or "").rstrip("/").lower()
+        title = (item.title or "").strip().lower()
+        if not url or url in seen_urls or (title and title in seen_titles):
+            continue
+        seen_urls.add(url)
+        if title:
+            seen_titles.add(title)
+        unique.append(item)
+        if len(unique) >= limit:
+            break
+    return unique
+
+
 def retrieve_current_context(query: str, limit: int = 6) -> CurrentContextResult:
     """Retrieve present-day facts for ``query`` from the configured provider.
 
@@ -207,10 +278,32 @@ def retrieve_current_context(query: str, limit: int = 6) -> CurrentContextResult
     q = (query or "").strip()
     if not q:
         return CurrentContextResult(status="unavailable", note="Empty query.")
-    if not is_configured():
+    if not is_configured() and not is_news_configured():
         return CurrentContextResult(status="unavailable", note=UNAVAILABLE_MESSAGE)
 
-    prov = _provider_name()
-    if prov == "serpapi":
-        return _serpapi(q, limit)
-    return _tavily(q, limit)
+    primary = CurrentContextResult(status="unavailable")
+    if is_configured():
+        primary = _serpapi(q, limit) if _provider_name() == "serpapi" else _tavily(q, limit)
+
+    # A second provider makes current-answer framing more trustworthy: the UI
+    # receives distinct links rather than an unsourced "latest" claim.
+    secondary = _newsapi(q, max(2, min(limit, 4))) if is_news_configured() else None
+    combined = list(primary.items)
+    notes = [primary.note] if primary.note else []
+    providers = [primary.provider] if primary.provider else []
+    if secondary:
+        combined.extend(secondary.items)
+        if secondary.note:
+            notes.append(secondary.note)
+        if secondary.provider:
+            providers.append(secondary.provider)
+
+    items = _dedupe_items(combined, limit)
+    if items:
+        return CurrentContextResult(
+            status="ok", provider="+".join(providers), items=items,
+            note=" ".join(notes),
+        )
+    if primary.status == "error" and (not secondary or secondary.status in ("error", "empty")):
+        return CurrentContextResult(status="error", provider="+".join(providers), note=" ".join(notes))
+    return CurrentContextResult(status="empty", provider="+".join(providers), note=" ".join(notes))

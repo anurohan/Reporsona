@@ -39,9 +39,14 @@ _BORN_RE = re.compile(
     r"\b(?:born|b\.)\s*(?:[^.]{0,24}?)(1[0-9]{3}|20[0-9]{2})\b",
     re.IGNORECASE,
 )
-# "died 19 January 1990", "d. 1990"
+# "died 19 January 1990", "passed away in 1990".
+#
+# Do not match the terse ``d. 1990`` notation here. In unstructured article
+# text it is too easy to confuse with a person's middle initial (for example
+# "Narendra D. ... 1989"), which created false death dates for living people.
+# Parenthesised lifespan ranges remain supported below and are much safer.
 _DIED_RE = re.compile(
-    r"\b(?:died|passed away|d\.)\s*(?:[^.]{0,24}?)(1[0-9]{3}|20[0-9]{2})\b",
+    r"\b(?:died|passed away)\s*(?:[^.]{0,24}?)(1[0-9]{3}|20[0-9]{2})\b",
     re.IGNORECASE,
 )
 # "(1931–1990)" / "(1931-1990)" / "1931 – 1990" — a birth–death range in parens
@@ -254,7 +259,12 @@ def parse_lifespan(text: str = "", summary: str = "") -> Lifespan:
     death = _first_int(_DIED_RE.search(blob))
 
     if birth is None or death is None:
-        m = _RANGE_RE.search(blob)
+        # A Wikipedia article often contains many other people's lifespans
+        # (parents, collaborators, historical figures). Only a lead summary,
+        # or the opening of a source with no summary, is allowed to define the
+        # subject's own parenthesised lifespan.
+        lead = (summary or text[:500]).strip()
+        m = _RANGE_RE.search(lead)
         if m:
             a, b = int(m.group(1)), int(m.group(2))
             # Only trust a range when it is plausible (b > a, spans < 130 yrs).

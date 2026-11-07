@@ -37,6 +37,25 @@ def test_parse_living_person_has_no_cutoff():
     assert span.knowledge_cutoff() is None
 
 
+def test_initials_do_not_create_false_death_date():
+    # Regression: a middle initial followed by a year must never be read as
+    # the abbreviated "d. YEAR" death notation.
+    span = parse_lifespan(
+        summary="Narendra D. Modi was born in 1950 and entered public life in 1989."
+    )
+    assert span.birth_year == 1950
+    assert span.death_year is None
+
+
+def test_relative_lifespan_does_not_override_living_subject():
+    span = parse_lifespan(
+        summary="Narendra Modi is an Indian politician born in 1950.",
+        text="His father Damodardas Modi (1915–1989) ran a tea stall.",
+    )
+    assert span.birth_year == 1950
+    assert span.death_year is None
+
+
 def test_parse_rejects_impossible_order():
     span = parse_lifespan(summary="born 1990 died 1931")
     assert span.birth_year is None and span.death_year is None

@@ -345,9 +345,9 @@ class WikipediaSourceAdapter(BaseSourceAdapter):
 def get_adapter() -> BaseSourceAdapter:
     if settings.source_mode == "demo":
         return DemoSourceAdapter()
-    if settings.search_provider and settings.search_api_key:
-        return LiveSearchAdapter()
-    # default: real live collection from Wikipedia (with demo fallback inside)
+    # Wikipedia provides the canonical identity, biography and lifespan data.
+    # Configured web/video providers are appended by ``discover`` below; they
+    # must never replace this baseline with an empty placeholder adapter.
     return WikipediaSourceAdapter()
 
 
