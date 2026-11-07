@@ -162,8 +162,8 @@ Profiles and coverage estimates can be incomplete or inaccurate, especially when
 
 ## Contributors
 
-- anurohan
+- Raushan /Anurohan
 
 ## Contributing
 
-This project is maintained by anurohan. Contributions, issues, and pull requests are welcome.
+This project is maintained by Rausahn/anurohan. Contributions, issues, and pull requests are welcome.
