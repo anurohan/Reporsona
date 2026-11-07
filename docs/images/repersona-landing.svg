@@ -1,0 +1,61 @@
+<svg width="1400" height="820" viewBox="0 0 1400 820" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1400" y2="820" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#070B17"/>
+      <stop offset="1" stop-color="#141C32"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="260" y1="90" x2="1130" y2="730" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7C6DFF"/>
+      <stop offset="0.6" stop-color="#4FD1FF"/>
+      <stop offset="1" stop-color="#6EE7B7"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="26" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1400" height="820" fill="url(#bg)"/>
+  <circle cx="1080" cy="150" r="240" fill="#7C6DFF" fill-opacity="0.14"/>
+  <circle cx="350" cy="700" r="220" fill="#4FD1FF" fill-opacity="0.10"/>
+
+  <g opacity="0.9">
+    <rect x="90" y="70" width="1220" height="680" rx="30" fill="#0D1324" stroke="#FFFFFF" stroke-opacity="0.08"/>
+    <rect x="120" y="100" width="1160" height="58" rx="16" fill="#0F1830" stroke="#FFFFFF" stroke-opacity="0.06"/>
+    <circle cx="160" cy="129" r="8" fill="#FF5F57"/>
+    <circle cx="192" cy="129" r="8" fill="#FFBD2E"/>
+    <circle cx="224" cy="129" r="8" fill="#28C840"/>
+    <rect x="268" y="114" width="220" height="22" rx="11" fill="#FFFFFF" fill-opacity="0.06"/>
+    <rect x="525" y="114" width="208" height="22" rx="11" fill="#FFFFFF" fill-opacity="0.04"/>
+
+    <rect x="172" y="220" width="450" height="400" rx="26" fill="#101A2E" stroke="#FFFFFF" stroke-opacity="0.08"/>
+    <rect x="197" y="246" width="120" height="18" rx="9" fill="#9CA3AF" fill-opacity="0.28"/>
+    <rect x="197" y="292" width="178" height="50" rx="12" fill="#FFFFFF" fill-opacity="0.04"/>
+    <rect x="197" y="364" width="222" height="14" rx="7" fill="#FFFFFF" fill-opacity="0.08"/>
+    <rect x="197" y="392" width="312" height="14" rx="7" fill="#FFFFFF" fill-opacity="0.06"/>
+    <rect x="197" y="420" width="264" height="14" rx="7" fill="#FFFFFF" fill-opacity="0.06"/>
+    <rect x="197" y="458" width="160" height="14" rx="7" fill="#FFFFFF" fill-opacity="0.05"/>
+    <rect x="197" y="520" width="180" height="44" rx="14" fill="url(#accent)" fill-opacity="0.9"/>
+    <text x="212" y="548" fill="#E6EAFD" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="600">Ask the archive</text>
+
+    <g filter="url(#glow)">
+      <rect x="680" y="210" width="510" height="430" rx="28" fill="#0D1428" stroke="url(#accent)" stroke-width="2" stroke-opacity="0.75"/>
+      <circle cx="840" cy="415" r="123" fill="url(#accent)" fill-opacity="0.16"/>
+      <circle cx="840" cy="415" r="74" fill="#0D1428" stroke="#9BB3FF" stroke-opacity="0.85"/>
+      <circle cx="840" cy="415" r="28" fill="#DDE9FF" fill-opacity="0.95"/>
+      <path d="M750 418C801 360 1004 362 1004 418C1004 468 800 522 752 474" stroke="#DDE9FF" stroke-opacity="0.7" stroke-width="3" stroke-linecap="round"/>
+      <path d="M760 495L865 430L945 476" stroke="#A2F3CF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <rect x="740" y="265" width="154" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.12"/>
+    <rect x="740" y="298" width="118" height="12" rx="6" fill="#FFFFFF" fill-opacity="0.08"/>
+    <rect x="740" y="585" width="142" height="14" rx="7" fill="#FFFFFF" fill-opacity="0.08"/>
+    <rect x="910" y="585" width="188" height="14" rx="7" fill="#FFFFFF" fill-opacity="0.08"/>
+  </g>
+
+  <text x="120" y="760" fill="#E5EBFF" font-family="Segoe UI, Arial, sans-serif" font-size="40" font-weight="700">RePersona</text>
+  <text x="420" y="760" fill="#9AA7C7" font-family="Segoe UI, Arial, sans-serif" font-size="24">documented minds • source-linked answers • truthful boundaries</text>
+</svg>

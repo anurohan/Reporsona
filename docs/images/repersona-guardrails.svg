@@ -1,0 +1,48 @@
+<svg width="1200" height="700" viewBox="0 0 1200 700" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg2" x1="70" y1="40" x2="1110" y2="660" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#090E1B"/>
+      <stop offset="1" stop-color="#121B30"/>
+    </linearGradient>
+    <linearGradient id="flow" x1="170" y1="100" x2="1020" y2="560" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8B5CF6"/>
+      <stop offset="0.45" stop-color="#4FD1FF"/>
+      <stop offset="1" stop-color="#4ADE80"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="700" rx="26" fill="url(#bg2)"/>
+  <rect x="50" y="50" width="1100" height="600" rx="28" fill="#0D1529" stroke="#FFFFFF" stroke-opacity="0.08"/>
+
+  <rect x="110" y="210" width="240" height="160" rx="22" fill="#121C31" stroke="#FFFFFF" stroke-opacity="0.08"/>
+  <text x="150" y="260" fill="#9AA7C7" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600">Historical corpus</text>
+  <text x="150" y="305" fill="#F4F7FF" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700">Known facts</text>
+  <text x="150" y="336" fill="#D7DEFF" font-family="Segoe UI, Arial, sans-serif" font-size="18">writings, quotes,</text>
+  <text x="150" y="360" fill="#D7DEFF" font-family="Segoe UI, Arial, sans-serif" font-size="18">events, context</text>
+
+  <rect x="480" y="170" width="240" height="180" rx="22" fill="#121C31" stroke="#FFFFFF" stroke-opacity="0.08"/>
+  <text x="520" y="220" fill="#9AA7C7" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600">Temporal guard</text>
+  <text x="520" y="278" fill="#F4F7FF" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="700">Cutoff check</text>
+  <text x="520" y="312" fill="#D7DEFF" font-family="Segoe UI, Arial, sans-serif" font-size="18">death year / present-day</text>
+  <text x="520" y="336" fill="#D7DEFF" font-family="Segoe UI, Arial, sans-serif" font-size="18">question detection</text>
+
+  <rect x="850" y="210" width="240" height="160" rx="22" fill="#121C31" stroke="#FFFFFF" stroke-opacity="0.08"/>
+  <text x="890" y="260" fill="#9AA7C7" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600">Current context</text>
+  <text x="890" y="305" fill="#F4F7FF" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700">Live search</text>
+  <text x="890" y="336" fill="#D7DEFF" font-family="Segoe UI, Arial, sans-serif" font-size="18">Tavily / SerpAPI / NewsAPI</text>
+
+  <path d="M350 290H480" stroke="url(#flow)" stroke-width="6" stroke-linecap="round"/>
+  <path d="M720 290H850" stroke="url(#flow)" stroke-width="6" stroke-linecap="round"/>
+  <path d="M600 350V430H350V530H300" stroke="url(#flow)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M600 350V430H950V530H980" stroke="url(#flow)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <rect x="190" y="430" width="320" height="130" rx="24" fill="#121C31" stroke="#FFFFFF" stroke-opacity="0.08"/>
+  <text x="225" y="483" fill="#9AA7C7" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600">Historical answer mode</text>
+  <text x="225" y="520" fill="#F4F7FF" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">Documented facts only</text>
+
+  <rect x="690" y="430" width="320" height="130" rx="24" fill="#121C31" stroke="#FFFFFF" stroke-opacity="0.08"/>
+  <text x="730" y="483" fill="#9AA7C7" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600">Present-day answer mode</text>
+  <text x="730" y="520" fill="#F4F7FF" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">Source-linked current context</text>
+
+  <text x="80" y="96" fill="#E8EEFF" font-family="Segoe UI, Arial, sans-serif" font-size="30" font-weight="700">RePersona truth boundary</text>
+</svg>

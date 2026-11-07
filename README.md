@@ -4,6 +4,24 @@
 
 > RePersona creates a clearly labeled AI simulation. It does not recreate a person's consciousness, represent their actual identity, or claim to communicate with them.
 
+<p align="center">
+  <img src="./docs/images/repersona-landing.svg" alt="RePersona landing UI" width="900" />
+</p>
+
+## What's new
+
+- Live current-context retrieval for present-day questions
+- Temporal guardrails and knowledge cutoff checks
+- Honest provider status reporting for optional integrations
+- Evidence-first answer labels that separate historical memory from modern facts
+- Cleaner archive UX for exploring personas and sources
+
+## Screenshots
+
+<p align="center">
+  <img src="./docs/images/repersona-guardrails.svg" alt="RePersona truth boundary and guardrails" width="900" />
+</p>
+
 ## What it does
 
 - Resolves ambiguous names into candidate identities before building a profile.
