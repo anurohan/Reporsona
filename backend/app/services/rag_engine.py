@@ -17,6 +17,7 @@ from app.config import settings
 from app.models import Chunk, Persona, Source
 from app.schemas import ChatTurn, EvidenceItem
 from app.services.embeddings import embedding_service
+from app.services.nlp import STOPWORDS, tokenize
 from app.services.llm_provider import is_smalltalk, llm_provider
 from app.services.vector_store import index_registry
 
@@ -60,10 +61,35 @@ def retrieve(db: Session, persona_id: str, question: str, top_k: int = TOP_K):
             continue
         source = db.get(Source, chunk.source_id)
         results.append((chunk, source, float(score)))
-    # Light reranking: prefer diverse sources among near-ties.
+    # Light lexical reranking: hashing embeddings can collide and neural
+    # embeddings can return a broadly related passage. Exact topic terms are a
+    # useful last-mile signal for short factual questions, so blend them into
+    # the retrieval score before selecting evidence.
+    query_terms = {
+        token for token in tokenize(question)
+        if token not in STOPWORDS and len(token) > 2
+    }
+
+    def lexical_score(text: str) -> float:
+        terms = {
+            token for token in tokenize(text)
+            if token not in STOPWORDS and len(token) > 2
+        }
+        if not query_terms or not terms:
+            return 0.0
+        return len(query_terms & terms) / len(query_terms)
+
+    rescored = []
+    for chunk, source, score in results:
+        # Keep embedding relevance dominant while using lexical overlap to
+        # break ties and correct obvious hash-vector collisions.
+        combined = (score * 0.65) + (lexical_score(chunk.text) * 0.35)
+        rescored.append((chunk, source, combined))
+
+    # Prefer diverse sources among near-ties.
     seen_sources: set[str] = set()
     reranked = []
-    for chunk, source, score in results:
+    for chunk, source, score in sorted(rescored, key=lambda x: x[2], reverse=True):
         bonus = 0.02 if (source and source.id not in seen_sources) else 0.0
         if source:
             seen_sources.add(source.id)

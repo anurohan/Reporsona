@@ -24,6 +24,7 @@ from typing import List, Optional, Tuple
 import httpx
 
 from app.config import settings
+from app.services.nlp import STOPWORDS, tokenize
 
 logger = logging.getLogger("repersona.llm")
 
@@ -166,8 +167,29 @@ def compose_demo_answer(
         return _IDENTITY_LINES[lk].format(name=name)
 
     snippets = [t.strip() for t in (evidence_texts or []) if t and t.strip()]
-    # clean + keep only snippets that yield a real sentence
-    cleaned = [c for c in (_first_sentences(s) for s in snippets[:3]) if c]
+
+    # Do not treat the first retrieved chunk as the answer. Retrieval is only a
+    # candidate generator, and the offline composer must still select sentences
+    # that actually address the question. This prevents an unrelated passage
+    # from becoming a confident-looking answer when vectors collide.
+    question_terms = {
+        token for token in tokenize(q)
+        if token not in STOPWORDS and len(token) > 2
+    }
+    candidates = []
+    for snippet_index, snippet in enumerate(snippets):
+        for sentence_index, sentence in enumerate(re.split(r"(?<=[.!?])\s+", _clean_snippet(snippet))):
+            sentence = sentence.strip()
+            if not sentence:
+                continue
+            sentence_terms = set(tokenize(sentence)) - STOPWORDS
+            overlap = len(question_terms & sentence_terms)
+            if overlap:
+                # Prefer direct matches, then preserve source order.
+                candidates.append((overlap, -snippet_index, -sentence_index, sentence))
+
+    candidates.sort(reverse=True)
+    cleaned = [_first_sentences(item[3], max_sentences=1, n=480) for item in candidates[:2]]
     if not cleaned:
         return _NO_ANSWER_LINES[lk]
 

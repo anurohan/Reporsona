@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 
 from app.services import rag_engine
+from app.services.llm_provider import compose_demo_answer
 from app.services.rag_engine import retrieve
 
 
@@ -55,3 +56,16 @@ def test_unknown_question_degrades_gracefully(db_session, demo_persona):
     # should still return a string and honest limitations, never crash
     assert isinstance(result["message"], str)
     assert isinstance(result["limitations"], list)
+
+
+def test_demo_composer_answers_from_matching_sentences_only():
+    answer = compose_demo_answer(
+        "Osho",
+        "What is meditation?",
+        [
+            "Fear is the mind standing at the edge of the unknown.",
+            "Meditation is not something you do; it is something you are.",
+        ],
+    )
+    assert "meditation" in answer.lower()
+    assert "fear" not in answer.lower()

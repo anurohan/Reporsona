@@ -1,0 +1,72 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RePersona — Interactive Architecture Companion</title>
+<style>
+:root{--bg:#0B1226;--p:#141E3F;--tx:#E6ECFF;--mu:#9FB0D8;--c:#22D3EE;--v:#8B5CF6;--a:#F59E0B;--g:#22C55E;--r:#F43F5E;--b:#3B82F6}
+@media(prefers-color-scheme:light){:root{--bg:#F1F5F9;--p:#FFFFFF;--tx:#1B2540;--mu:#475569}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 Inter,system-ui,sans-serif}
+header{padding:18px 22px}h1{margin:0;font-size:20px}h1 span{color:var(--c)}header p{margin:4px 0 0;color:var(--mu);font-size:13px}
+nav{display:flex;gap:6px;flex-wrap:wrap;padding:0 22px}nav button{background:var(--p);color:var(--tx);border:1px solid #33406B;border-radius:8px;padding:7px 12px;cursor:pointer;font:inherit;font-size:13px}
+nav button.on{border-color:var(--c);box-shadow:0 0 0 1px var(--c)}
+main{padding:14px 22px 30px;max-width:1100px}.card{background:var(--p);border:1px solid #24315F;border-radius:14px;padding:12px}
+svg{width:100%;height:auto;display:block}.ctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.ctl button{background:var(--c);color:#06202A;border:0;border-radius:8px;padding:7px 14px;font-weight:700;cursor:pointer}.ctl button.s{background:var(--p);color:var(--tx);border:1px solid #33406B}
+.cap{min-height:44px;padding:8px 12px;border-left:3px solid var(--v);background:rgba(139,92,246,.12);border-radius:6px;margin-top:8px}
+.info{font-size:13px;color:var(--mu);margin-top:6px;min-height:20px}.node{cursor:pointer}.node rect{transition:.25s}
+.note{color:var(--mu);font-size:12px;margin-top:14px}input[type=range]{accent-color:var(--c)}
+</style></head><body>
+<header><h1>Re<span>Persona</span> — Interactive Architecture Companion</h1>
+<p>Conceptual simulations of the architecture described in the technical report. Nothing here calls a real backend; all data is illustrative.</p></header>
+<nav id="tabs"></nav><main><div class="card"><svg id="svg" viewBox="0 0 960 400" aria-label="simulation"></svg>
+<div class="ctl"><button id="play">▶ Play</button><button class="s" id="step">Step ▸</button><button class="s" id="reset">↺ Reset</button>
+<label>Speed <input type="range" id="spd" min="0.5" max="3" step="0.25" value="1"></label><span id="ctr" class="info"></span></div>
+<div class="cap" id="cap"></div><div class="info" id="info">Click any component to read what it does.</div></div>
+<p class="note">Companion to <b>RePersona_Complete_Visual_Technical_Report.pdf</b>. Concepts follow the project report: component names and endpoints are documented; timing and data are illustrative. Optional integrations are shown dashed.</p></main>
+<script>
+const COL={c:'#22D3EE',v:'#8B5CF6',a:'#F59E0B',g:'#22C55E',r:'#F43F5E',b:'#3B82F6',t:'#14B8A6',x:'#64748B'};
+const N=(id,l,x,y,c,d,w=120,h=56,dash)=>({id,l,x,y,c,d,w,h,dash});
+const SIMS={
+chat:{title:'Frontend ↔ Backend (chat)',nodes:[
+N('u','User',20,30,'c','Clicks Send in the chat screen.'),N('cp','ChatPanel',170,30,'c','React component; captures the question and calls sendChat().'),
+N('api','api.ts',320,30,'b','Typed fetch layer: JSON headers, base URL, ApiError conversion.'),N('fa','FastAPI /api/chat',470,30,'v','Router for POST /api/chat; Pydantic validates the request.'),
+N('pr','Persona Reasoner',620,30,'v','Classifies the question, checks temporal context, retrieves evidence, builds a guarded prompt.',140),
+N('db','Database',20,200,'t','SQL: loads persona and session; persists user and assistant messages.'),
+N('vs','Vector store',170,200,'t','Per-persona FAISS / in-memory index; returns top-K chunks.'),
+N('cc','Current context',320,200,'a','Optional Tavily / SerpAPI / NewsAPI lookup — only when classification says fresh facts are needed.',130,56,1),
+N('llm','LLM / composer',470,200,'r','Ollama, OpenAI-compatible, or the offline demo composer.',130),N('ev','EvidencePanel',620,200,'g','Renders sources, citations and limitations from the response.',140)],
+steps:[['u','cp','User clicks Send; ChatPanel captures the question.'],['cp','api','React calls sendChat(); JSON body is built.'],['api','fa','POST /api/chat travels over HTTP.'],['fa','pr','Router validates with Pydantic and calls persona_reasoner.reason().'],['pr','db','Persona and session loaded; user message persisted.'],['pr','vs','Question embedded; top-K vector search, lexical rerank, diversity.'],['pr','cc','Only if needed: current-context provider (may be unconfigured → reported, not faked).'],['pr','llm','Guarded prompt sent to the selected provider.'],['llm','pr','Answer text returned (or safe offline fallback).'],['pr','fa','Labels, citations, warnings and reasoning trace assembled.'],['fa','api','Structured ChatResponse JSON returned.'],['api','ev','Frontend parses it; ChatPanel shows the answer, EvidencePanel the evidence.']]},
+rag:{title:'RAG pipeline',nodes:[
+N('q','User question',20,30,'c','Typed in ChatPanel.'),N('e','Question embedding',170,30,'t','Sentence Transformers, else hashing fallback; normalised vector.',130),N('k','Top-K search',335,30,'b','Vector similarity over the persona index (K unspecified in the report).'),
+N('l','Lexical rerank',490,30,'b','Boosts exact topic overlap; protects against vector collisions.'),N('d','Source diversity',640,30,'b','Prefers evidence from varied sources.',130),
+N('ei','EvidenceItems',20,200,'g','Chunks with provenance: source, URL, dates.'),N('pp','Guarded prompt',170,200,'v','System rules + profile + evidence + history + language + mode.',130),
+N('g','LLM / composer',335,200,'r','Expresses retrieved evidence; never the source of facts.'),N('co','Citations & limits',490,200,'a','Labels SIMULATED_PERSONA_RESPONSE; warnings; reasoning trace.',130),N('fe','Frontend',640,200,'c','ChatPanel + EvidencePanel.',130)],
+steps:[['q','e','Question becomes a vector.'],['e','k','Nearest chunks retrieved (illustrative ranking).'],['k','l','Reranked for exact topical overlap.'],['l','d','Source diversity preference applied.'],['d','ei','EvidenceItem objects built with provenance.'],['ei','pp','Evidence inserted into the persona-conditioned prompt.'],['pp','g','Generator produces the answer from evidence.'],['g','co','Quotation and temporal safeguards applied; citations attached.'],['co','fe','Structured answer displayed with evidence and limitations.']]},
+build:{title:'15-stage build',pipeline:['Discover sources','Validate candidates','Collect source data','Process documents','Process audio','Transcribe speech','Run OCR','Clean text','Run NLP analysis','Generate embeddings','Build vector index','Analyze patterns','Construct profile','Validate evidence','Mark ready'],
+desc:['source_discovery.py — live adapter, optional providers; demo fallback.','Checks before collection; criteria unspecified in the report.','Summary, portrait, article text, sections, Wikiquote quotes → source rows.','Text/MD read; PDF via pypdf.','FFmpeg media processing.','Whisper-compatible transcription.','Pillow + Tesseract OCR.','nlp.py cleaning.','Sentence split, chunking with overlap, keywords.','embeddings.py — Sentence Transformers or hashing fallback.','vector_store.py — FAISS or memory, one index per persona.','persona_analysis.py — topics, themes, style, co-occurrence graph.','PersonaProfile and evidence-linked insights; timeline.','Unsupported DOCUMENTED claims are downgraded.','job_manager.py — persona ready; COMPLETED event.']},
+sse:{title:'SSE progress',nodes:[N('h','useJobStream',20,40,'c','React hook; subscribes with EventSource; polling fallback.',140),N('es','EventSource',200,40,'c','Browser API holding one open HTTP response.',130),N('ep','/api/jobs/{id}/stream',370,40,'v','FastAPI SSE endpoint.',160),N('jm','Job manager',570,40,'v','Async build task; persists Job state.',130),N('st','Build stage',740,40,'t','Current pipeline stage.',130)],
+steps:[['h','es','Open the stream.'],['es','ep','GET /api/jobs/{id}/stream.'],['ep','es','SNAPSHOT of persisted state.'],['st','jm','Stage 1 starts.'],['jm','ep','Named stage event.'],['ep','h','Frontend state updates; progress bar advances.'],['ep','h','PING keep-alive.'],['st','jm','Stages 2…14 (each event drives the UI; nothing is invented).'],['ep','h','COMPLETED → navigate to the ready persona.']]}};
+let cur='chat',i=0,playing=false,raf=0,t0=0,svg=document.getElementById('svg');const $=id=>document.getElementById(id);
+const tabs=$('tabs');Object.entries(SIMS).forEach(([k,s])=>{const b=document.createElement('button');b.textContent=s.title;b.onclick=()=>load(k);b.dataset.k=k;tabs.appendChild(b)});
+const NS='http://www.w3.org/2000/svg';const el=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);(p||svg).appendChild(e);return e};
+let nodes={},pkt,bar=[];
+function layout(s){nodes={};svg.innerHTML='';bar=[];
+ if(s.pipeline){s.nodes=s.pipeline.map((l,j)=>N('s'+j,(j+1)+'. '+l,20+(j%5)*185,20+Math.floor(j/5)*95,['g','t','t','c','c','c','c','b','b','v','v','a','a','r','r'][j],s.desc[j],170,70));s.steps=s.nodes.slice(0,-1).map((n,j)=>[n.id,'s'+(j+1),'Stage '+(j+1)+' → '+(j+2)+': '+s.desc[j+1]]);s.steps.unshift(['s0','s0','Stage 1 — '+s.desc[0]])}
+ s.nodes.forEach(n=>{const g=el('g',{class:'node'});el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,rx:10,fill:COL[n.c],'fill-opacity':.15,stroke:COL[n.c],'stroke-width':1.6,'stroke-dasharray':n.dash?'5 4':'0'},g);
+  const t=el('text',{x:n.x+n.w/2,y:n.y+n.h/2+4,'text-anchor':'middle',fill:'currentColor','font-size':12,'font-weight':700},g);t.textContent=n.l;
+  t.style.fill='var(--tx)';g.onclick=()=>{$('info').textContent=n.l+' — '+n.d+(n.dash?' (optional)':'')};nodes[n.id]=Object.assign(n,{g,r:g.firstChild})});
+ if(s.pipeline){for(let j=0;j<15;j++)bar.push(el('rect',{x:20+j*61,y:305,width:56,height:20,rx:5,fill:'#33406B'}));el('text',{x:20,y:350,fill:'#9FB0D8','font-size':12}).textContent='Progress is derived from real stage events — never invented.'}
+ else if(cur==='sse'){for(let j=0;j<15;j++)bar.push(el('rect',{x:20+j*61,y:260,width:56,height:20,rx:5,fill:'#33406B'}));el('text',{x:20,y:310,fill:'#9FB0D8','font-size':12}).textContent='Progress bar across the 15 stages (conceptual).'}
+ s.steps.forEach(([a,b])=>{if(a!==b){const A=ctr(nodes[a]),B=ctr(nodes[b]);const l=el('line',{x1:A[0],y1:A[1],x2:B[0],y2:B[1],stroke:'#64748B','stroke-opacity':.5,'stroke-dasharray':'4 4'});svg.insertBefore(l,svg.firstChild)}})
+ pkt=el('circle',{r:7,fill:COL.a,cx:-20,cy:-20})}
+function ctr(n){return[n.x+n.w/2,n.y+n.h/2]}
+function show(j,f){const [a,b,txt]=SIMS[cur].steps[j];$('cap').textContent=(j+1)+' / '+SIMS[cur].steps.length+' — '+txt;
+ Object.values(nodes).forEach(n=>{const on=n.id===a||n.id===b;n.r.setAttribute('fill-opacity',on?.5:.15)});
+ const A=ctr(nodes[a]),B=ctr(nodes[b]);pkt.setAttribute('cx',A[0]+(B[0]-A[0])*f);pkt.setAttribute('cy',A[1]+(B[1]-A[1])*f);
+ const done=cur==='build'?j+1:(cur==='sse'?Math.min(15,Math.max(0,(j-2)*3+1)):0);bar.forEach((r,k)=>r.setAttribute('fill',k<done?COL.g:'#33406B'));$('ctr').textContent=''}
+function load(k){cur=k;stop();i=0;const s=SIMS[k];layout(s);document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));show(0,0)}
+function anim(ts){if(!playing)return;if(!t0)t0=ts;const d=1100/parseFloat($('spd').value),f=Math.min(1,(ts-t0)/d);show(i,f);
+ if(f>=1){t0=0;if(i<SIMS[cur].steps.length-1){i++}else{stop();return}}raf=requestAnimationFrame(anim)}
+function stop(){playing=false;cancelAnimationFrame(raf);t0=0;$('play').textContent='▶ Play'}
+$('play').onclick=()=>{if(playing){stop();return}if(i>=SIMS[cur].steps.length-1&&parseFloat(pkt.getAttribute('cx'))>0&&i===SIMS[cur].steps.length-1)i=0;playing=true;$('play').textContent='❚❚ Pause';raf=requestAnimationFrame(anim)};
+$('step').onclick=()=>{stop();i=(i+1)%SIMS[cur].steps.length;show(i,1)};$('reset').onclick=()=>{stop();i=0;show(0,0)};
+load('chat');
+</script></body></html>
