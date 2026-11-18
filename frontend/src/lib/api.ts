@@ -18,6 +18,8 @@ import type {
   TimelineEvent,
   Topic,
   UploadResult,
+  AuthResponse,
+  UserOut,
 } from "./types";
 
 export const API_BASE =
@@ -42,6 +44,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       ...init,
       headers: {
         "Content-Type": "application/json",
+        ...(typeof window !== "undefined" && localStorage.getItem("repersona_access_token")
+          ? { Authorization: `Bearer ${localStorage.getItem("repersona_access_token")}` }
+          : {}),
         ...(init?.headers || {}),
       },
       cache: "no-store",
@@ -54,6 +59,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   if (!res.ok) {
+    if (res.status === 401 && typeof window !== "undefined" && !path.startsWith("/auth/")) {
+      window.location.assign(`/auth?next=${encodeURIComponent(window.location.pathname)}`);
+    }
     let detail = `${res.status} ${res.statusText}`;
     try {
       const body = await res.json();
@@ -71,6 +79,30 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
+}
+
+export function register(input: { email: string; password: string; display_name?: string }): Promise<AuthResponse> {
+  return request<AuthResponse>("/auth/register", { method: "POST", body: JSON.stringify(input) });
+}
+
+export function login(input: { email: string; password: string }): Promise<AuthResponse> {
+  return request<AuthResponse>("/auth/login", { method: "POST", body: JSON.stringify(input) });
+}
+
+export function getCurrentUser(): Promise<UserOut> {
+  return request<UserOut>("/auth/me");
+}
+
+export function logout(): Promise<void> {
+  return request<void>("/auth/logout", { method: "POST" });
+}
+
+export function saveAuth(response: AuthResponse): void {
+  if (typeof window !== "undefined") localStorage.setItem("repersona_access_token", response.access_token);
+}
+
+export function clearAuth(): void {
+  if (typeof window !== "undefined") localStorage.removeItem("repersona_access_token");
 }
 
 export function createPersona(input: {
@@ -199,6 +231,9 @@ export async function uploadSourceFile(
       {
         method: "POST",
         body: formData,
+        headers: typeof window !== "undefined" && localStorage.getItem("repersona_access_token")
+          ? { Authorization: `Bearer ${localStorage.getItem("repersona_access_token")}` }
+          : {},
         cache: "no-store",
       }
     );
@@ -230,7 +265,8 @@ export async function uploadSourceFile(
 
 // Convenience: the SSE endpoint URL for a job.
 export function jobStreamUrl(jobId: string): string {
-  return `${API}/jobs/${encodeURIComponent(jobId)}/stream`;
+  const token = typeof window !== "undefined" ? localStorage.getItem("repersona_access_token") : null;
+  return `${API}/jobs/${encodeURIComponent(jobId)}/stream${token ? `?access_token=${encodeURIComponent(token)}` : ""}`;
 }
 
 // ---- Provider status (§27) ------------------------------------------------ //
@@ -288,4 +324,243 @@ export function deleteConversation(sessionId: string): Promise<void> {
   return request<void>(`/conversations/${encodeURIComponent(sessionId)}`, {
     method: "DELETE",
   });
+}
+
+// ---- Virtual Friends ------------------------------------------------------- //
+import type {
+  VirtualFriendSummary,
+  TranscriptUploadResult,
+  VFChatResponse,
+  VFConversation,
+  VFMemory,
+  VFTranscript,
+  ImportPreview,
+  ImportConfirmation,
+} from "./types";
+
+export function listVirtualFriends(): Promise<VirtualFriendSummary[]> {
+  return request<VirtualFriendSummary[]>("/virtual-friends/");
+}
+
+export function createVirtualFriend(input: {
+  name: string;
+  description?: string;
+  avatar_color?: string;
+}): Promise<VirtualFriendSummary> {
+  return request<VirtualFriendSummary>("/virtual-friends/", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function getVirtualFriend(id: string): Promise<VirtualFriendSummary> {
+  return request<VirtualFriendSummary>(
+    `/virtual-friends/${encodeURIComponent(id)}`
+  );
+}
+
+export function deleteVirtualFriend(id: string): Promise<void> {
+  return request<void>(`/virtual-friends/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}
+
+// Transcripts
+export async function uploadTranscript(
+  friendId: string,
+  file: File,
+  targetSpeaker?: string
+): Promise<TranscriptUploadResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (targetSpeaker && targetSpeaker.trim()) {
+    formData.append("target_speaker", targetSpeaker.trim());
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(
+      `${API_BASE}/api/virtual-friends/${encodeURIComponent(friendId)}/transcripts/upload`,
+      {
+        method: "POST",
+        body: formData,
+        headers: typeof window !== "undefined" && localStorage.getItem("repersona_access_token")
+          ? { Authorization: `Bearer ${localStorage.getItem("repersona_access_token")}` }
+          : {},
+        cache: "no-store",
+      }
+    );
+  } catch (err) {
+    throw new ApiError(
+      "Could not reach the service. Check that the backend is running.",
+      0
+    );
+  }
+
+  if (!res.ok) {
+    let detail = `${res.status} ${res.statusText}`;
+    try {
+      const body = await res.json();
+      if (body?.detail) {
+        detail =
+          typeof body.detail === "string"
+            ? body.detail
+            : JSON.stringify(body.detail);
+      }
+    } catch {
+      /* ignore */
+    }
+    throw new ApiError(detail, res.status);
+  }
+
+  return (await res.json()) as TranscriptUploadResult;
+}
+
+export function addTextTranscript(
+  friendId: string,
+  payload: { text: string; title?: string; target_speaker?: string }
+): Promise<TranscriptUploadResult> {
+  return request<TranscriptUploadResult>(
+    `/virtual-friends/${encodeURIComponent(friendId)}/transcripts/text`,
+    { method: "POST", body: JSON.stringify(payload) }
+  );
+}
+
+export function listTranscripts(friendId: string): Promise<VFTranscript[]> {
+  return request<VFTranscript[]>(
+    `/virtual-friends/${encodeURIComponent(friendId)}/transcripts`
+  );
+}
+
+export function deleteTranscript(
+  friendId: string,
+  transcriptId: string
+): Promise<void> {
+  return request<void>(
+    `/virtual-friends/${encodeURIComponent(friendId)}/transcripts/${encodeURIComponent(transcriptId)}`,
+    { method: "DELETE" }
+  );
+}
+
+export function reprocessTranscript(
+  friendId: string,
+  transcriptId: string
+): Promise<TranscriptUploadResult> {
+  return request<TranscriptUploadResult>(
+    `/virtual-friends/${encodeURIComponent(friendId)}/transcripts/${encodeURIComponent(transcriptId)}/reprocess`,
+    { method: "POST" }
+  );
+}
+
+export function selectSpeaker(
+  friendId: string,
+  transcriptId: string,
+  targetSpeaker: string
+): Promise<any> {
+  return request<any>(
+    `/virtual-friends/${encodeURIComponent(friendId)}/transcripts/${encodeURIComponent(transcriptId)}/select-speaker`,
+    { method: "POST", body: JSON.stringify({ target_speaker: targetSpeaker }) }
+  );
+}
+
+// Chat
+export function sendVFChat(input: {
+  friend_id: string;
+  message: string;
+  session_id?: string;
+  history?: ChatTurn[];
+  language?: string;
+}): Promise<VFChatResponse> {
+  return request<VFChatResponse>(
+    `/virtual-friends/${encodeURIComponent(input.friend_id)}/chat`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        friend_id: input.friend_id,
+        message: input.message,
+        session_id: input.session_id ?? null,
+        history: input.history ?? [],
+        language: input.language ?? "en",
+      }),
+    }
+  );
+}
+
+export function listVFConversations(
+  friendId: string
+): Promise<VFConversation[]> {
+  return request<VFConversation[]>(
+    `/virtual-friends/${encodeURIComponent(friendId)}/conversations`
+  );
+}
+
+export function deleteVFConversation(
+  friendId: string,
+  sessionId: string
+): Promise<void> {
+  return request<void>(
+    `/virtual-friends/${encodeURIComponent(friendId)}/conversations/${encodeURIComponent(sessionId)}`,
+    { method: "DELETE" }
+  );
+}
+
+// Memory
+export function listVFMemories(friendId: string): Promise<VFMemory[]> {
+  return request<VFMemory[]>(
+    `/virtual-friends/${encodeURIComponent(friendId)}/memories`
+  );
+}
+
+export function deleteVFMemory(
+  friendId: string,
+  memoryId: string
+): Promise<void> {
+  return request<void>(
+    `/virtual-friends/${encodeURIComponent(friendId)}/memories/${encodeURIComponent(memoryId)}`,
+    { method: "DELETE" }
+  );
+}
+
+export function uploadConversationPreview(
+  file: File,
+  platform: string,
+  onProgress?: (progress: number) => void
+): Promise<ImportPreview> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_BASE}/api/virtual-friends/imports/preview`);
+    const token = typeof window !== "undefined" ? localStorage.getItem("repersona_access_token") : null;
+    if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100));
+    };
+    xhr.onerror = () => reject(new ApiError("Could not reach the service.", 0));
+    xhr.onload = () => {
+      let body: any = {};
+      try { body = JSON.parse(xhr.responseText); } catch { /* handled below */ }
+      if (xhr.status >= 200 && xhr.status < 300) resolve(body as ImportPreview);
+      else reject(new ApiError(body.detail || `${xhr.status} ${xhr.statusText}`, xhr.status));
+    };
+    const form = new FormData();
+    form.append("file", file);
+    form.append("platform", platform);
+    xhr.send(form);
+  });
+}
+
+export function confirmConversationImport(input: {
+  import_id: string;
+  target_speaker: string;
+  friend_id?: string;
+  friend_name?: string;
+  description?: string;
+}): Promise<ImportConfirmation> {
+  return request<ImportConfirmation>(`/virtual-friends/imports/${encodeURIComponent(input.import_id)}/confirm`, {
+    method: "POST",
+    body: JSON.stringify({ target_speaker: input.target_speaker, friend_id: input.friend_id ?? null, friend_name: input.friend_name ?? null, description: input.description ?? "" }),
+  });
+}
+
+export function deleteConversationImport(importId: string): Promise<void> {
+  return request<void>(`/virtual-friends/imports/${encodeURIComponent(importId)}`, { method: "DELETE" });
 }

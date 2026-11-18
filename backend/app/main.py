@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import SessionLocal, init_db
 from app.middleware import RateLimitMiddleware
-from app.routers import chat, conversations, health, jobs, personas, providers, uploads
+from app.routers import auth, chat, conversations, health, jobs, personas, providers, uploads, virtual_friends
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,6 +28,8 @@ ETHICAL_NOTICE = (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if settings.env.lower() in {"production", "prod"} and settings.auth_secret.startswith("development-only-"):
+        raise RuntimeError("AUTH_SECRET must be configured with a random value in production.")
     init_db()
     if settings.demo_mode:
         # Seed a ready Osho demo persona so /explore has content immediately.
@@ -65,12 +67,14 @@ app.add_middleware(
 
 api_prefix = "/api"
 app.include_router(health.router, prefix=api_prefix)
+app.include_router(auth.router, prefix=api_prefix)
 app.include_router(providers.router, prefix=api_prefix)
 app.include_router(personas.router, prefix=api_prefix)
 app.include_router(uploads.router, prefix=api_prefix)
 app.include_router(jobs.router, prefix=api_prefix)
 app.include_router(chat.router, prefix=api_prefix)
 app.include_router(conversations.router, prefix=api_prefix)
+app.include_router(virtual_friends.router, prefix=api_prefix)
 
 
 @app.get("/")

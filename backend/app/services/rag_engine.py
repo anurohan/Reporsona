@@ -29,7 +29,13 @@ def ensure_index(db: Session, persona_id: str) -> None:
     """Lazily build the persona's vector index from its chunks."""
     if index_registry.has(persona_id):
         return
-    chunks = list(db.scalars(select(Chunk).where(Chunk.persona_id == persona_id)))
+    chunks = list(
+        db.scalars(
+            select(Chunk)
+            .where(Chunk.persona_id == persona_id)
+            .order_by(Chunk.created_at, Chunk.ordinal, Chunk.id)
+        )
+    )
     ids = [c.id for c in chunks]
     vectors = embedding_service.encode([c.text for c in chunks]) if chunks else []
     index_registry.build(persona_id, ids, vectors, embedding_service.dim)

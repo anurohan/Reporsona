@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
+  <title id="title">RePersona working pipeline animation</title>
+  <desc id="desc">Animated illustration of RePersona discovering sources, analyzing evidence, retrieving context, and generating a grounded answer.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#070b1c"/><stop offset="1" stop-color="#151035"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" x2="1">
+      <stop offset="0" stop-color="#6d5dfc"/><stop offset="1" stop-color="#c084fc"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="8" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <style>
+      .label{font:600 16px ui-sans-serif,system-ui,sans-serif;fill:#f8fafc}.muted{font:14px ui-sans-serif,system-ui,sans-serif;fill:#94a3b8}.small{font:12px ui-sans-serif,system-ui,sans-serif;fill:#a5b4fc}.card{fill:#111936;stroke:#334071;stroke-width:1.5}.line{stroke:#334071;stroke-width:3;stroke-linecap:round}.accent{stroke:url(#accent);stroke-width:4;stroke-linecap:round}.pill{fill:#1e2547;stroke:#4f46e5;stroke-width:1}.bubble{fill:#1a2450;stroke:#5b5ce2;stroke-width:1}
+    </style>
+  </defs>
+  <rect width="1200" height="650" rx="28" fill="url(#bg)"/>
+  <circle cx="1030" cy="80" r="150" fill="#5146e5" opacity=".12"/>
+  <circle cx="180" cy="570" r="190" fill="#a855f7" opacity=".08"/>
+  <text x="70" y="72" class="small" letter-spacing="3">REPERSONA / LIVE PIPELINE</text>
+  <text x="70" y="116" class="label" font-size="32">From evidence to an honest answer</text>
+  <text x="70" y="145" class="muted">Every response passes through discovery, analysis, retrieval, and provenance checks.</text>
+
+  <path d="M170 300 H1030" class="line" opacity=".7"/>
+  <path d="M170 300 H1030" class="accent" stroke-dasharray="70 790" opacity=".8">
+    <animate attributeName="stroke-dashoffset" from="860" to="0" dur="3.2s" repeatCount="indefinite"/>
+  </path>
+  <circle cx="170" cy="300" r="9" fill="#8b7cff" filter="url(#glow)"><animate attributeName="cx" values="170;1030;170" dur="6.4s" repeatCount="indefinite"/></circle>
+
+  <g transform="translate(70 215)">
+    <rect width="210" height="170" rx="18" class="card"/>
+    <circle cx="38" cy="42" r="20" fill="#312e81"/><text x="38" y="48" text-anchor="middle" class="label">1</text>
+    <text x="72" y="48" class="label">Discover</text><text x="24" y="86" class="muted">Wikipedia · Wikiquote</text><text x="24" y="110" class="muted">User uploads · APIs</text>
+    <rect x="24" y="132" width="150" height="8" rx="4" fill="#252d53"><rect width="96" height="8" rx="4" fill="#818cf8"><animate attributeName="width" values="20;150;20" dur="3.2s" repeatCount="indefinite"/></rect></rect>
+  </g>
+  <g transform="translate(330 215)">
+    <rect width="210" height="170" rx="18" class="card"/><circle cx="38" cy="42" r="20" fill="#312e81"/><text x="38" y="48" text-anchor="middle" class="label">2</text>
+    <text x="72" y="48" class="label">Analyze</text><text x="24" y="86" class="muted">Chunk and classify</text><text x="24" y="110" class="muted">Timeline · insights</text>
+    <rect x="24" y="132" width="150" height="8" rx="4" fill="#252d53"><rect width="100" height="8" rx="4" fill="#a78bfa"><animate attributeName="width" values="30;150;30" dur="3.2s" begin=".8s" repeatCount="indefinite"/></rect></rect>
+  </g>
+  <g transform="translate(590 215)">
+    <rect width="210" height="170" rx="18" class="card"/><circle cx="38" cy="42" r="20" fill="#312e81"/><text x="38" y="48" text-anchor="middle" class="label">3</text>
+    <text x="72" y="48" class="label">Retrieve</text><text x="24" y="86" class="muted">Semantic + lexical RAG</text><text x="24" y="110" class="muted">Rank evidence chunks</text>
+    <rect x="24" y="132" width="150" height="8" rx="4" fill="#252d53"><rect width="82" height="8" rx="4" fill="#c084fc"><animate attributeName="width" values="25;150;25" dur="3.2s" begin="1.6s" repeatCount="indefinite"/></rect></rect>
+  </g>
+  <g transform="translate(850 215)">
+    <rect width="280" height="170" rx="18" class="card"/><circle cx="38" cy="42" r="20" fill="#312e81"/><text x="38" y="48" text-anchor="middle" class="label">4</text>
+    <text x="72" y="48" class="label">Answer with evidence</text><text x="24" y="86" class="muted">Guardrails + provenance</text><text x="24" y="110" class="muted">Source-aware response</text>
+    <rect x="24" y="132" width="205" height="8" rx="4" fill="#252d53"><rect width="205" height="8" rx="4" fill="#34d399"><animate attributeName="opacity" values=".35;1;.35" dur="1.4s" repeatCount="indefinite"/></rect></rect>
+  </g>
+
+  <rect x="70" y="465" width="1060" height="105" rx="18" fill="#0d1430" stroke="#29345d"/>
+  <rect x="96" y="491" width="9" height="9" rx="5" fill="#34d399"><animate attributeName="opacity" values="1;.25;1" dur="1.2s" repeatCount="indefinite"/></rect>
+  <text x="122" y="501" class="small">SYSTEM STATUS</text><text x="96" y="537" class="muted">Evidence coverage: HIGH</text><text x="330" y="537" class="muted">Knowledge cutoff: enforced</text><text x="615" y="537" class="muted">Provider: local / configured</text>
+  <g opacity="0"><rect x="835" y="488" width="245" height="45" rx="14" class="bubble"/><text x="855" y="516" class="small">“Show me the evidence.”</text><animate attributeName="opacity" values="0;1;1;0" dur="6.4s" repeatCount="indefinite"/></g>
+  <text x="70" y="615" class="small">SIMULATION, NOT IDENTITY · SOURCES STAY VISIBLE</text>
+</svg>

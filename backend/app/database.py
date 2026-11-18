@@ -57,13 +57,28 @@ def _ensure_columns() -> None:
     from sqlalchemy import inspect, text
 
     wanted = {
+        "users": {
+            "password_hash": "VARCHAR(512) DEFAULT ''",
+            "token_version": "INTEGER DEFAULT 1",
+        },
         "personas": {
+            "owner_id": "VARCHAR(32)",
             "birth_year": "INTEGER",
             "death_year": "INTEGER",
             "birth_date": "VARCHAR(32) DEFAULT ''",
             "death_date": "VARCHAR(32) DEFAULT ''",
             "knowledge_cutoff": "VARCHAR(32) DEFAULT ''",
             "knowledge_cutoff_reason": "VARCHAR(255) DEFAULT ''",
+        },
+        "vf_transcripts": {
+            "source_ids": "JSON",
+            "raw_text": "TEXT DEFAULT ''",
+        },
+        "virtual_friends": {
+            "owner_id": "VARCHAR(32)",
+        },
+        "vf_imports": {
+            "owner_id": "VARCHAR(32)",
         },
     }
     try:

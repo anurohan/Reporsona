@@ -1,0 +1,8 @@
+{
+  "thread_path": "inbox/audit",
+  "participants": [{"name": "Alex"}, {"name": "Me"}],
+  "messages": [
+    {"sender_name": "Alex", "timestamp_ms": 1768492200000, "content": "I enjoy quiet mountains 👋"},
+    {"sender_name": "Me", "timestamp_ms": 1768492260000, "content": "That sounds peaceful."}
+  ]
+}

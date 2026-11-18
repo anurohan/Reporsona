@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
-from app.models import ChatMessage, ChatSession, Persona
+from app.models import ChatMessage, ChatSession, Persona, User
 from app.schemas import (
     ChatRequest,
     ChatResponse,
@@ -14,17 +14,18 @@ from app.schemas import (
     TemporalContext,
 )
 from app.services import persona_reasoner
+from app.services.auth import get_current_user
 
 router = APIRouter(tags=["chat"])
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(payload: ChatRequest, db: Session = Depends(get_db)):
+async def chat(payload: ChatRequest, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     if len(payload.message) > settings.max_question_chars:
         raise HTTPException(status_code=422, detail="Question too long")
 
     persona = db.get(Persona, payload.persona_id)
-    if not persona:
+    if not persona or (persona.owner_id != user.id and not persona.is_demo):
         raise HTTPException(status_code=404, detail="Persona not found")
     if persona.status != "ready":
         raise HTTPException(status_code=409, detail="Persona is not ready yet")

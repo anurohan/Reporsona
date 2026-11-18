@@ -10,11 +10,13 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from .conftest import authenticate
 
 
 @pytest.fixture(scope="module")
 def client():
     with TestClient(app) as c:  # triggers lifespan (init_db + demo seed)
+        authenticate(c)
         yield c
 
 

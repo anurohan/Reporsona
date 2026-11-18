@@ -45,12 +45,18 @@ class User(Base, TimestampMixin):
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     display_name: Mapped[str] = mapped_column(String(255), default="")
+    password_hash: Mapped[str] = mapped_column(String(512), default="")
+    token_version: Mapped[int] = mapped_column(Integer, default=1)
+
+    personas = relationship("Persona", back_populates="owner")
+    virtual_friends = relationship("VirtualFriend", back_populates="owner")
 
 
 class Persona(Base, TimestampMixin):
     __tablename__ = "personas"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    owner_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(255), index=True)
     slug: Mapped[str] = mapped_column(String(255), index=True)
     status: Mapped[str] = mapped_column(String(32), default="pending")  # pending|building|ready|failed
@@ -72,6 +78,8 @@ class Persona(Base, TimestampMixin):
     death_date: Mapped[str] = mapped_column(String(32), default="")
     knowledge_cutoff: Mapped[str] = mapped_column(String(32), default="")
     knowledge_cutoff_reason: Mapped[str] = mapped_column(String(255), default="")
+
+    owner = relationship("User", back_populates="personas")
 
     sources = relationship("Source", back_populates="persona", cascade="all, delete-orphan")
     topics = relationship("Topic", back_populates="persona", cascade="all, delete-orphan")
@@ -230,3 +238,115 @@ class ChatMessage(Base, TimestampMixin):
     evidence: Mapped[list] = mapped_column(JSON, default=list)
 
     session = relationship("ChatSession", back_populates="messages")
+
+
+# ---------------------------------------------------------------------------
+# Virtual Friend models
+# ---------------------------------------------------------------------------
+
+
+class VirtualFriend(Base, TimestampMixin):
+    __tablename__ = "virtual_friends"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    owner_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(255), index=True)
+    slug: Mapped[str] = mapped_column(String(255), index=True)
+    description: Mapped[str] = mapped_column(Text, default="")
+    avatar_color: Mapped[str] = mapped_column(String(32), default="#6366f1")
+    # ready | processing | failed
+    status: Mapped[str] = mapped_column(String(32), default="ready")
+    # Extracted personality profile (JSON blob)
+    personality: Mapped[dict] = mapped_column(JSON, default=dict)
+    # Statistics
+    total_messages: Mapped[int] = mapped_column(Integer, default=0)
+    total_transcripts: Mapped[int] = mapped_column(Integer, default=0)
+    # Link to underlying Persona for RAG reuse
+    persona_id: Mapped[str | None] = mapped_column(
+        ForeignKey("personas.id"), nullable=True, index=True
+    )
+
+    persona = relationship("Persona")
+    owner = relationship("User", back_populates="virtual_friends")
+    transcripts = relationship(
+        "VFTranscript", back_populates="friend", cascade="all, delete-orphan"
+    )
+    imports = relationship("VFImport", back_populates="friend", cascade="all, delete-orphan")
+    chat_sessions = relationship(
+        "VFChatSession", back_populates="friend", cascade="all, delete-orphan"
+    )
+
+
+class VFTranscript(Base, TimestampMixin):
+    __tablename__ = "vf_transcripts"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    friend_id: Mapped[str] = mapped_column(
+        ForeignKey("virtual_friends.id", ondelete="CASCADE"), index=True
+    )
+    filename: Mapped[str] = mapped_column(String(1024), default="")
+    # whatsapp | json | csv | text
+    format: Mapped[str] = mapped_column(String(32), default="text")
+    # All detected speakers in the transcript
+    speakers: Mapped[list] = mapped_column(JSON, default=list)
+    # The person being simulated
+    target_speaker: Mapped[str] = mapped_column(String(512), default="")
+    message_count: Mapped[int] = mapped_column(Integer, default=0)
+    parse_errors: Mapped[list] = mapped_column(JSON, default=list)
+    # Exact derived-source ownership prevents same-named imports from being
+    # mixed during deletion/reprocessing. The raw text is retained only so a
+    # user can explicitly reprocess their private upload.
+    source_ids: Mapped[list] = mapped_column(JSON, default=list)
+    raw_text: Mapped[str] = mapped_column(Text, default="")
+
+    friend = relationship("VirtualFriend", back_populates="transcripts")
+
+
+class VFImport(Base, TimestampMixin):
+    """Staged normalized export awaiting participant selection/confirmation."""
+
+    __tablename__ = "vf_imports"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    owner_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    friend_id: Mapped[str | None] = mapped_column(ForeignKey("virtual_friends.id", ondelete="CASCADE"), nullable=True, index=True)
+    platform: Mapped[str] = mapped_column(String(32), default="")
+    filename: Mapped[str] = mapped_column(String(1024), default="")
+    conversation_id: Mapped[str] = mapped_column(String(512), default="")
+    participants: Mapped[list] = mapped_column(JSON, default=list)
+    normalized_messages: Mapped[list] = mapped_column(JSON, default=list)
+    source_metadata: Mapped[dict] = mapped_column(JSON, default=dict)
+    parse_errors: Mapped[list] = mapped_column(JSON, default=list)
+    status: Mapped[str] = mapped_column(String(32), default="preview")
+    friend = relationship("VirtualFriend", back_populates="imports")
+    owner = relationship("User")
+
+
+class VFChatSession(Base, TimestampMixin):
+    __tablename__ = "vf_chat_sessions"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    friend_id: Mapped[str] = mapped_column(ForeignKey("virtual_friends.id"), index=True)
+    title: Mapped[str] = mapped_column(String(512), default="New conversation")
+
+    friend = relationship("VirtualFriend", back_populates="chat_sessions")
+    messages = relationship(
+        "VFChatMessage",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        order_by="VFChatMessage.created_at",
+    )
+
+
+class VFChatMessage(Base, TimestampMixin):
+    __tablename__ = "vf_chat_messages"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    session_id: Mapped[str] = mapped_column(ForeignKey("vf_chat_sessions.id"), index=True)
+    # user | assistant
+    role: Mapped[str] = mapped_column(String(16))
+    content: Mapped[str] = mapped_column(Text)
+    evidence_coverage: Mapped[str] = mapped_column(String(16), default="")
+    evidence: Mapped[list] = mapped_column(JSON, default=list)
+
+    session = relationship("VFChatSession", back_populates="messages")

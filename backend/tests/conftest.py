@@ -21,6 +21,15 @@ os.environ["DATABASE_URL"] = f"sqlite:///{_TMP_DB}"
 os.environ.setdefault("VECTOR_DB", "memory")
 
 
+def authenticate(client, email: str = "audit@example.com", password: str = "correct horse battery staple"):
+    response = client.post("/api/auth/register", json={"email": email, "password": password, "display_name": "Audit User"})
+    if response.status_code == 409:
+        response = client.post("/api/auth/login", json={"email": email, "password": password})
+    assert response.status_code in {200, 201}, response.text
+    client.headers.update({"Authorization": f"Bearer {response.json()['access_token']}"})
+    return response.json()
+
+
 @pytest.fixture(scope="session")
 def db_session():
     from app.database import SessionLocal, init_db

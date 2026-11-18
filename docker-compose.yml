@@ -27,9 +27,11 @@ services:
       db:
         condition: service_healthy
     environment:
+      ENV: "production"
       DEMO_MODE: "true"
       LLM_PROVIDER: "demo"
       VECTOR_DB: "memory"
+      AUTH_SECRET: "${AUTH_SECRET:?Set AUTH_SECRET to a random value before starting Docker Compose}"
       DATABASE_URL: "postgresql+psycopg2://repersona:repersona@db:5432/repersona"
       CORS_ORIGINS: "http://localhost:3000"
     ports:

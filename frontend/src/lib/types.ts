@@ -25,6 +25,18 @@ export interface PersonaSummary {
   knowledge_cutoff_reason?: string;
 }
 
+export interface UserOut {
+  id: string;
+  email: string;
+  display_name: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+  user: UserOut;
+}
+
 export interface Profile {
   communication_style: string[];
   recurring_themes: string[];
@@ -356,6 +368,102 @@ export interface JobActivityEvent {
   detail: string;
   /** Client receive time (ms epoch) for ordering/animation. */
   ts: number;
+}
+
+// ---- Virtual Friends -------------------------------------------------------
+
+export interface VirtualFriendSummary {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  avatar_color: string;
+  status: string;
+  personality: Record<string, any>;
+  total_messages: number;
+  total_transcripts: number;
+}
+
+export interface TranscriptUploadResult {
+  transcript_id: string;
+  friend_id: string;
+  filename: string;
+  format: string;
+  speakers: string[];
+  target_speaker: string;
+  message_count: number;
+  chunks_added: number;
+  parse_errors: string[];
+  note: string;
+}
+
+export interface ImportPreview {
+  import_id: string;
+  platform: string;
+  filename: string;
+  conversation_id: string;
+  participants: string[];
+  message_count: number;
+  sample_messages: Array<{ sender: string; text: string; timestamp?: string | null }>;
+  parse_errors: string[];
+  source_metadata: Record<string, any>;
+  status: string;
+}
+
+export interface ImportConfirmation {
+  import_id: string;
+  friend_id: string;
+  transcript_id: string;
+  target_speaker: string;
+  message_count: number;
+  chunks_added: number;
+  status: string;
+}
+
+export interface VFChatResponse {
+  session_id: string;
+  message: string;
+  evidence: Evidence[];
+  evidence_coverage: EvidenceCoverage;
+  limitations: string[];
+  provider: string;
+  confidence: "HIGH" | "MEDIUM" | "LOW" | "INSUFFICIENT";
+  reasoning_note: string;
+}
+
+export interface VFMemory {
+  id: string;
+  label: string;
+  detail: string;
+  classification: InsightClassification;
+  evidence_chunk_ids: string[];
+}
+
+export interface VFConversation {
+  id: string;
+  friend_id: string;
+  title: string;
+  message_count: number;
+}
+
+export interface VFMessage {
+  id: string;
+  role: string;
+  content: string;
+  evidence_coverage: string;
+  evidence: any[];
+}
+
+export interface VFTranscript {
+  id: string;
+  friend_id: string;
+  filename: string;
+  format: string;
+  speakers: string[];
+  target_speaker: string;
+  message_count: number;
+  parse_errors: string[];
+  created_at: string;
 }
 
 // Shape of a decoded SSE `data` payload from /api/jobs/{id}/stream.

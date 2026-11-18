@@ -14,13 +14,14 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import ChatMessage, ChatSession, Persona
+from app.models import ChatMessage, ChatSession, Persona, User
 from app.schemas import (
     ConversationDetail,
     ConversationOut,
     ConversationRenameRequest,
     MessageOut,
 )
+from app.services.auth import get_current_user
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 
@@ -31,10 +32,16 @@ def _count(db: Session, session_id: str) -> int:
     ) or 0
 
 
+def _owns_session(db: Session, session: ChatSession, user: User) -> bool:
+    persona = db.get(Persona, session.persona_id)
+    return bool(persona and (persona.owner_id == user.id or persona.is_demo))
+
+
 @router.get("", response_model=List[ConversationOut])
-def list_conversations(persona_id: str, db: Session = Depends(get_db)):
+def list_conversations(persona_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     """List conversations for a persona, newest first."""
-    if not db.get(Persona, persona_id):
+    persona = db.get(Persona, persona_id)
+    if not persona or (persona.owner_id != user.id and not persona.is_demo):
         raise HTTPException(status_code=404, detail="Persona not found")
     rows = db.scalars(
         select(ChatSession)
@@ -50,9 +57,9 @@ def list_conversations(persona_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/{session_id}", response_model=ConversationDetail)
-def get_conversation(session_id: str, db: Session = Depends(get_db)):
+def get_conversation(session_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     session = db.get(ChatSession, session_id)
-    if not session:
+    if not session or not _owns_session(db, session, user):
         raise HTTPException(status_code=404, detail="Conversation not found")
     detail = ConversationDetail.model_validate(session)
     detail.messages = [MessageOut.model_validate(m) for m in session.messages]
@@ -62,10 +69,10 @@ def get_conversation(session_id: str, db: Session = Depends(get_db)):
 
 @router.patch("/{session_id}", response_model=ConversationOut)
 def rename_conversation(
-    session_id: str, payload: ConversationRenameRequest, db: Session = Depends(get_db)
+    session_id: str, payload: ConversationRenameRequest, db: Session = Depends(get_db), user: User = Depends(get_current_user)
 ):
     session = db.get(ChatSession, session_id)
-    if not session:
+    if not session or not _owns_session(db, session, user):
         raise HTTPException(status_code=404, detail="Conversation not found")
     session.title = payload.title.strip()
     db.commit()
@@ -76,9 +83,9 @@ def rename_conversation(
 
 
 @router.delete("/{session_id}", status_code=204)
-def delete_conversation(session_id: str, db: Session = Depends(get_db)):
+def delete_conversation(session_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     session = db.get(ChatSession, session_id)
-    if not session:
+    if not session or not _owns_session(db, session, user):
         raise HTTPException(status_code=404, detail="Conversation not found")
     db.query(ChatMessage).filter(ChatMessage.session_id == session_id).delete(
         synchronize_session=False

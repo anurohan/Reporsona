@@ -1,36 +1,64 @@
-﻿# RePersona
+# RePersona
 
-**Explore the documented mind of history.** RePersona is an AI-powered research and conversation app that builds evidence-grounded simulations of public and historical figures from accessible source material. Search for a person, review the sources used to build their profile, and ask questions with answers linked to supporting evidence.
+**Explore the documented mind of history.** RePersona is an AI-powered research and conversation app that builds evidence-grounded simulations of public and historical figures from accessible source material. It can also create private, evidence-grounded Virtual Friends from authorized conversation exports.
 
-> RePersona creates a clearly labeled AI simulation. It does not recreate a person's consciousness, represent their actual identity, or claim to communicate with them.
+> RePersona creates clearly labeled AI simulations. It does not recreate a person's consciousness, represent their actual identity, or claim to communicate with them.
 
 <p align="center">
   <img src="./docs/images/repersona-hero.png" alt="RePersona landing screen" width="1200" />
 </p>
 
-## What it does
+<p align="center">
+  <img src="./docs/images/repersona-workflow.svg" alt="Animated RePersona working pipeline" width="1200" />
+</p>
 
-- Resolves ambiguous names into candidate identities before building a profile.
-- Collects public biographical material, article text, documented quotations, and portraits from Wikipedia, Wikiquote, and Wikimedia APIs.
-- Builds a profile, documented timeline, knowledge graph, source collection, and estimated knowledge coverage.
-- Streams build progress through a 15-stage pipeline.
-- Supports Evidence, Persona Simulation, Historical, and Current Context + Persona answer modes.
-- Detects when a question requires present-day knowledge and routes it to live web search rather than the historical corpus.
-- Applies temporal guardrails with knowledge cutoffs so the app does not claim a deceased person could have known a later event.
-- Shows evidence, source details, temporal context, and reasoning information alongside responses.
-- Labels simulated responses separately from verified historical quotations and guards against attributing later events to deceased people.
-- Supports adding text and uploading documents or media for ingestion; OCR, PDF extraction, and audio/video transcription require optional dependencies.
-- Includes a bundled synthetic demo corpus so the main experience can run without external AI services or API keys.
+_The animation above shows the live product flow: discover sources, analyze them, retrieve evidence, and return a guarded answer._
 
-## How it works
+## Product overview
 
-The Next.js frontend calls a FastAPI backend over JSON REST endpoints and Server-Sent Events. The backend discovers or accepts sources, extracts and chunks text, analyzes the material, indexes it for retrieval, and generates answers with source evidence. SQLite and lightweight offline components are suitable for local development; PostgreSQL, hosted or local LLMs, neural embeddings, and external discovery providers are optional.
+RePersona combines source discovery, multimodal ingestion, retrieval-augmented generation, temporal guardrails, and transparent evidence display in one local-first application.
 
-### Reality guardrails and current-context retrieval
+### Historical and public personas
 
-The current build adds a temporal-safety layer that classifies whether a question is historical, present-day, or a hypothetical projection. If a question references events after a person's known lifespan or asks for "what is happening now," the system switches to a Current Context + Persona mode and requires fresh external facts from a configured live search provider. If no provider is configured, RePersona clearly reports that current-context data is unavailable instead of inventing facts.
+- Resolve ambiguous names into candidate identities before building a profile.
+- Collect public biographies, article text, documented quotations, and portraits from Wikipedia, Wikiquote, Wikimedia, and optional authorized providers.
+- Build a profile, timeline, knowledge graph, source collection, insights, and estimated knowledge coverage.
+- Stream progress through a 15-stage persona-building pipeline using Server-Sent Events.
+- Ask questions in Evidence, Persona Simulation, Historical, or Current Context + Persona modes.
+- Show supporting sources, relevance, temporal context, knowledge cutoffs, provider status, and reasoning information alongside answers.
+- Add pasted text or upload documents and media. OCR, PDF extraction, and audio/video transcription are optional capabilities.
 
-This boundary is enforced in the backend services responsible for temporal analysis and current-context retrieval, and it is surfaced in the UI as source-aware answer labels, knowledge cutoff metadata, and provider status information.
+### Reality and temporal guardrails
+
+The backend classifies questions as historical, present-day, or hypothetical. Questions about current events or facts after a deceased person's documented lifespan are routed to the current-context path and require fresh results from a configured search provider. If no provider is available, the app reports that current-context data is unavailable instead of inventing facts.
+
+### Accounts and private Virtual Friends
+
+- Register, sign in, inspect the current account, and sign out through bearer-token authentication.
+- Keep user-created personas, uploads, conversations, staged imports, and Virtual Friends owner-scoped.
+- Create a Virtual Friend from an authorized WhatsApp, Instagram, Telegram, Facebook Messenger, TXT, JSON, or CSV export.
+- Preview detected participants before selecting the target speaker and confirming the import.
+- Normalize messages, preserve conversation context, index private chunks, and extract documented/observed/inferred memories.
+- Chat using only the selected friend's uploaded evidence; the system abstains when the evidence is insufficient.
+- Inspect, reprocess, or delete transcripts, memories, and chat sessions.
+
+Virtual Friends are simulations of communication style based on uploaded messages. They are not the real person and do not claim that person's identity, consciousness, memories, or current knowledge. Use only data you are authorized to process.
+
+## Architecture
+
+The Next.js frontend calls the FastAPI backend through JSON REST endpoints and Server-Sent Events. The backend discovers or accepts sources, extracts and chunks text, analyzes the material, indexes it for retrieval, and generates answers with evidence. SQLite and lightweight offline components are suitable for local development; PostgreSQL, Ollama, hosted LLMs, neural embeddings, FAISS, and external discovery providers are optional.
+
+```text
+Browser / Next.js UI
+        │ REST + SSE
+        ▼
+FastAPI API ── authentication, personas, imports, chat, providers
+        │
+        ├── SQLAlchemy + SQLite/PostgreSQL
+        ├── source discovery and multimodal ingestion
+        ├── embeddings + FAISS/in-memory retrieval
+        └── LLM/current-context providers with evidence guardrails
+```
 
 ## Requirements
 
@@ -44,80 +72,102 @@ This boundary is enforced in the backend services responsible for temporal analy
 
 ### Windows one-click setup
 
-Double-click `START_REPERSONA.bat` from the project root. On first launch, it prepares the backend environment, installs dependencies, sets up local environment files, starts the backend and frontend, and opens the app at <http://localhost:3000>.
+Double-click [`START_REPERSONA.bat`](./START_REPERSONA.bat) from the project root. On first launch it creates the backend environment, installs dependencies, copies local environment files, starts the backend and frontend, and opens <http://localhost:3000>.
 
-### Run manually
+### Manual setup
 
 Start the backend in one terminal:
 
-```bash
+```powershell
 cd backend
 python -m venv .venv
-# Windows PowerShell: .venv\Scripts\Activate.ps1
-# macOS/Linux: source .venv/bin/activate
+.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-# Copy .env.example to .env (PowerShell: Copy-Item .env.example .env)
+Copy-Item .env.example .env
 uvicorn app.main:app --reload
 ```
 
-The API is available at <http://localhost:8000>; interactive API documentation is at <http://localhost:8000/docs>. SQLite is the default database. The backend seeds a ready Osho demo persona when `DEMO_MODE=true`.
-
 Start the frontend in another terminal:
 
-```bash
+```powershell
 cd frontend
 npm install
-# Copy .env.example to .env.local (PowerShell: Copy-Item .env.example .env.local)
+Copy-Item .env.example .env.local
 npm run dev
 ```
 
-Open <http://localhost:3000>. The frontend expects the API at `http://localhost:8000` by default. To change it, set `NEXT_PUBLIC_API_BASE` in `frontend/.env.local` and restart the frontend.
+Open <http://localhost:3000>. The API is available at <http://localhost:8000> and interactive API documentation is available at <http://localhost:8000/docs>. SQLite is the default database. With `DEMO_MODE=true`, startup seeds a ready Osho demonstration persona.
+
+For authenticated use, set a random `AUTH_SECRET` in `backend/.env`, then register at <http://localhost:3000/auth>. Passwords must be at least 12 characters. Persona management, uploads, conversations, and all Virtual Friends endpoints require authentication.
 
 ### Docker Compose
 
-From the project root:
+Set `AUTH_SECRET` in the shell before starting the production-style Compose stack:
 
-```bash
+```powershell
+$env:AUTH_SECRET = "replace-with-a-long-random-secret"
 docker compose up --build
 ```
 
-Compose starts PostgreSQL, the API, and the frontend. Visit <http://localhost:3000>. Stop the services with `docker compose down`; PostgreSQL data is kept in the named `pgdata` volume. To remove that volume and its data, use `docker compose down -v`.
+Compose starts PostgreSQL, the API, and the frontend. Visit <http://localhost:3000>. Stop services with `docker compose down`. PostgreSQL data remains in the named `pgdata` volume; `docker compose down -v` also removes that data.
 
 ## Configuration
 
-Copy `backend/.env.example` to `backend/.env` and adjust as needed. Keep secrets in local environment files; do not commit API keys.
+Copy [`backend/.env.example`](./backend/.env.example) to `backend/.env`. Keep secrets in local environment files and never commit API keys.
 
 | Setting | Default | Description |
 |---|---|---|
-| `SOURCE_MODE` | `auto` | `auto` / `wikipedia` uses public Wikipedia, Wikiquote, and Wikimedia APIs; `demo` uses the bundled offline corpus. |
-| `WIKIPEDIA_LANG` | `en` | Language edition used for supported Wikimedia sources. |
-| `DEMO_MODE` | `true` | Seeds the demonstration persona at startup. |
-| `DATABASE_URL` | SQLite | SQLAlchemy connection URL; PostgreSQL is supported. |
-| `LLM_PROVIDER` | `auto` | `auto`, `demo`, `ollama`, or `openai_compatible`. Auto uses reachable Ollama or falls back to the offline composer. |
+| `SOURCE_MODE` | `auto` | `auto`/`wikipedia` uses public Wikipedia, Wikiquote, and Wikimedia APIs; `demo` uses the bundled offline corpus. |
+| `WIKIPEDIA_LANG` | `en` | Wikimedia language edition. |
+| `DEMO_MODE` | `true` | Seeds the ready Osho demo persona at startup. |
+| `DATABASE_URL` | SQLite | SQLAlchemy URL; PostgreSQL is supported. |
+| `LLM_PROVIDER` | `auto` | `auto`, `demo`, `ollama`, or `openai_compatible`. Auto uses reachable Ollama or the offline composer. |
 | `LLM_BASE_URL` | `http://127.0.0.1:11434` | Ollama or compatible service URL. |
-| `LLM_MODEL` | `llama3.2:3b` | Model name sent to the configured LLM provider. |
+| `LLM_MODEL` | `llama3.2:3b` | Model name sent to the configured provider. |
 | `LLM_API_KEY` | empty | Optional key for a hosted compatible provider. |
-| `VECTOR_DB` | `faiss` | Vector store choice; the app can fall back to in-memory storage. |
-| `SEARCH_PROVIDER` / `SEARCH_API_KEY` | empty | Optional Tavily or SerpAPI source discovery. |
-| `YOUTUBE_API_KEY` | empty | Optional YouTube Data API discovery. |
-| `NEWS_API_KEY` | empty | Optional current-context enrichment. |
-| `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated frontend origins allowed by the API. |
+| `EMBEDDING_MODEL` | `paraphrase-multilingual-MiniLM-L12-v2` | Neural embedding model; lexical fallback is used when unavailable. |
+| `VECTOR_DB` | `faiss` | `faiss` or `memory`; the app falls back to memory when needed. |
+| `VECTOR_DIR` | `./data/vector` | Persistent vector index directory. |
+| `SEARCH_PROVIDER` / `SEARCH_API_KEY` | empty | Optional `tavily` or `serpapi` current-context/source discovery. |
+| `YOUTUBE_API_KEY` | empty | Optional YouTube interview discovery. |
+| `NEWS_API_KEY` | empty | Optional current-context news enrichment. |
+| `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated allowed frontend origins. |
+| `AUTH_SECRET` | development placeholder | Long random signing secret; mandatory for production. |
+| `AUTH_TOKEN_TTL_SECONDS` | `86400` | Bearer-token lifetime. |
 
-The frontend setting `NEXT_PUBLIC_API_BASE` belongs in `frontend/.env.local`. More configuration and troubleshooting guidance is in [SETUP.md](./SETUP.md). Provider keys are optional; missing providers are skipped and reported as unconfigured.
+The frontend setting `NEXT_PUBLIC_API_BASE` belongs in `frontend/.env.local` and defaults to `http://localhost:8000`.
 
-### Optional capabilities
+## API surface
 
-The base backend requirements are intentionally lightweight. Optional integrations may require uncommenting/installing packages listed in `backend/requirements.txt`:
+The API is mounted under `/api`:
+
+| Area | Main endpoints |
+|---|---|
+| Health | `GET /api/health` |
+| Authentication | `POST /api/auth/register`, `/login`, `/logout`; `GET /api/auth/me` |
+| Personas | `POST /api/personas/resolve`, `/create`; `GET /api/personas`; persona detail, sources, topics, insights, timeline, coverage, and knowledge graph routes |
+| Sources | `POST /api/personas/{id}/sources/text` and `/sources/upload` |
+| Jobs | `GET /api/jobs/{id}` and `/stream` |
+| Historical chat | `POST /api/chat` |
+| Conversations | `GET/PATCH/DELETE /api/conversations...` |
+| Providers | `GET /api/providers` |
+| Virtual Friends | `/api/virtual-friends` for creation, staged imports, transcripts, chat, memories, and conversations |
+
+See the interactive OpenAPI documentation at <http://localhost:8000/docs> for request and response schemas.
+
+## Optional capabilities
+
+The base backend requirements are intentionally lightweight. Optional packages can be enabled in [`backend/requirements.txt`](./backend/requirements.txt):
 
 - `sentence-transformers`, `faiss-cpu`, and `numpy` for neural embeddings and FAISS indexing.
 - `faster-whisper` or `openai-whisper` plus FFmpeg for audio/video transcription.
 - `pytesseract`, Pillow, and the Tesseract system package for OCR.
-- `pypdf` for PDF text extraction.
+- `pypdf` for PDF extraction.
 - `boto3` for S3-compatible storage.
 
-When optional packages are unavailable, some ingestion paths are unavailable and the app uses lighter offline retrieval components where supported.
+If optional packages are unavailable, supported paths use lighter offline fallbacks where possible. The first startup with neural embeddings may download the configured model and can take longer than later starts.
 
-## Development commands
+## Development and validation
 
 ```bash
 # Backend tests
@@ -131,39 +181,54 @@ npm run build
 npm run start
 ```
 
-## Ethical use and source limitations
+The backend test suite covers authentication, API behavior, discovery, ingestion, temporal classification, RAG, vector persistence, uploads, the demo pipeline, and Virtual Friends.
 
-RePersona is for research and exploration. Its generated responses are simulations based on available evidence, not statements made by the historical person. The bundled demo corpus is synthetic paraphrased material, not authentic transcripts. The system distinguishes sourced claims, observations, inferences, and unknowns and is designed to avoid fabricating quotations. Source discovery is limited to public APIs and authorized or user-provided material; it does not bypass paywalls, authentication, robots restrictions, or platform protections. Always review source context and licensing before reusing material.
+## Security, privacy, and source limitations
 
-Profiles and coverage estimates can be incomplete or inaccurate, especially when source material is sparse. The demo corpus illustrates the workflow and should not be treated as scholarship.
+- Passwords are stored as salted PBKDF2-HMAC-SHA256 hashes; tokens are signed and revoked on logout by incrementing the user's token version.
+- Private resources carry ownership information and are filtered by the authenticated user.
+- Raw Virtual Friend transcript text is retained only to support explicit reprocessing and is deleted with the transcript/friend.
+- Source ownership is tracked by source ID, so deleting one import does not remove another import with the same filename.
+- Do not upload conversation data without authorization. Use production TLS, a strong `AUTH_SECRET`, restricted CORS origins, and a managed database for deployment.
+- RePersona does not bypass paywalls, authentication, robots restrictions, or platform protections. Review source context and licensing before reusing material.
+- Generated responses are simulations based on available evidence, not statements made by the historical person or real private contact.
+
+Profiles and coverage estimates can be incomplete or inaccurate, especially when source material is sparse. The bundled demo corpus is synthetic paraphrased material and should not be treated as scholarship or an authentic transcript.
 
 ## Project structure
 
 ```text
 .
-├── backend/               FastAPI API, services, pipeline, database, tests
-│   ├── app/                Routers, schemas, models, and AI/source services
-│   ├── alembic/            Database migrations
-│   └── tests/              Backend tests
-├── frontend/              Next.js App Router interface
-│   └── src/                Pages, components, hooks, and API client
-├── docker-compose.yml      PostgreSQL + API + frontend development stack
-├── ARCHITECTURE.md         System design and implementation notes
-├── SETUP.md                Configuration and troubleshooting guide
-└── START_REPERSONA.bat     Windows one-click launcher
+├── backend/
+│   ├── app/                  FastAPI routers, schemas, models, and services
+│   ├── alembic/              Database migrations
+│   └── tests/                Backend test suite and fixtures
+├── frontend/
+│   └── src/app/              Next.js pages and route segments
+│       ├── auth/             Registration and login
+│       ├── explore/          Persona archive
+│       ├── persona/          Build, profile, sources, chat, insights, knowledge
+│       └── virtual-friends/  Private import, memory, and chat workflow
+├── docs/                     Authentication, Virtual Friends, and visual reports
+├── docker-compose.yml        PostgreSQL + API + frontend stack
+├── ARCHITECTURE.md           System design and implementation notes
+├── SETUP.md                  Extended configuration and troubleshooting
+└── START_REPERSONA.bat      Windows one-click launcher
 ```
 
 ## Documentation
 
 - [Setup and troubleshooting](./SETUP.md)
 - [Architecture and API design](./ARCHITECTURE.md)
+- [Authentication](./docs/AUTHENTICATION.md)
+- [Virtual Friends](./docs/VIRTUAL_FRIENDS.md)
 - [Backend configuration reference](./backend/.env.example)
 - [Frontend configuration example](./frontend/.env.example)
 
 ## Contributors
 
-- Raushan /Anurohan
+- Raushan / Anurohan
 
 ## Contributing
 
-This project is maintained by Raushan/anurohan. Contributions, issues, and pull requests are welcome.
+Contributions, issues, and pull requests are welcome. Please keep evidence provenance, privacy boundaries, ethical labels, and test coverage intact when changing the application.

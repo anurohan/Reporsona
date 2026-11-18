@@ -21,6 +21,9 @@ faiss index written to ``settings.vector_dir``).
 from __future__ import annotations
 
 import threading
+import json
+import os
+from pathlib import Path
 from abc import ABC, abstractmethod
 from typing import List, Sequence, Tuple
 
@@ -106,6 +109,33 @@ class FaissVectorStore(VectorStore):
     def __len__(self) -> int:
         return len(self._ids)
 
+    def save(self, index_path: Path, metadata_path: Path) -> None:
+        index_path.parent.mkdir(parents=True, exist_ok=True)
+        temp_index = index_path.with_suffix(index_path.suffix + ".tmp")
+        temp_meta = metadata_path.with_suffix(metadata_path.suffix + ".tmp")
+        self._faiss.write_index(self._index, str(temp_index))
+        temp_meta.write_text(json.dumps({"version": 1, "dim": self.dim, "ids": self._ids}), encoding="utf-8")
+        os.replace(temp_index, index_path)
+        os.replace(temp_meta, metadata_path)
+
+    @classmethod
+    def load(cls, index_path: Path, metadata_path: Path):
+        import faiss  # type: ignore
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        index = faiss.read_index(str(index_path))
+        ids = metadata.get("ids", [])
+        dim = int(metadata.get("dim", index.d))
+        if dim != index.d or len(ids) != index.ntotal:
+            raise ValueError("FAISS metadata does not match the index")
+        instance = cls.__new__(cls)
+        VectorStore.__init__(instance, dim)
+        import numpy as np  # type: ignore
+        instance._faiss = faiss
+        instance._np = np
+        instance._index = index
+        instance._ids = [str(value) for value in ids]
+        return instance
+
 
 def make_vector_store(dim: int) -> VectorStore:
     if settings.vector_db == "faiss":
@@ -136,16 +166,71 @@ class IndexRegistry:
         vectors: Sequence[Sequence[float]],
         dim: int,
     ) -> VectorStore:
+        persisted = self._load_if_valid(persona_id, chunk_ids, dim)
+        if persisted is not None:
+            with self._lock:
+                self._stores[persona_id] = persisted
+            return persisted
         store = make_vector_store(dim)
         if chunk_ids:
             store.add(chunk_ids, vectors)
         with self._lock:
             self._stores[persona_id] = store
+        self._persist(persona_id, store)
+        return store
+
+    def _paths(self, persona_id: str) -> tuple[Path, Path]:
+        root = Path(settings.vector_dir)
+        return root / f"{persona_id}.faiss", root / f"{persona_id}.json"
+
+    def _load_if_valid(self, persona_id: str, chunk_ids: Sequence[str], dim: int) -> VectorStore | None:
+        if settings.vector_db != "faiss":
+            return None
+        index_path, metadata_path = self._paths(persona_id)
+        if not index_path.exists() or not metadata_path.exists():
+            return None
+        try:
+            store = FaissVectorStore.load(index_path, metadata_path)
+            metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+            if store.dim != dim or list(metadata.get("ids", [])) != list(chunk_ids):
+                return None
+            return store
+        except Exception:
+            return None
+
+    def _persist(self, persona_id: str, store: VectorStore) -> None:
+        if settings.vector_db != "faiss" or not isinstance(store, FaissVectorStore):
+            return
+        index_path, metadata_path = self._paths(persona_id)
+        try:
+            store.save(index_path, metadata_path)
+        except Exception:
+            # Retrieval remains available in memory; a later build will retry.
+            pass
+
+    def add(
+        self,
+        persona_id: str,
+        chunk_ids: Sequence[str],
+        vectors: Sequence[Sequence[float]],
+        dim: int,
+    ) -> VectorStore:
+        """Incrementally append new vectors and atomically update metadata."""
+        store = self._stores.get(persona_id)
+        if store is None:
+            return self.build(persona_id, chunk_ids, vectors, dim)
+        store.add(chunk_ids, vectors)
+        self._persist(persona_id, store)
         return store
 
     def drop(self, persona_id: str) -> None:
         with self._lock:
             self._stores.pop(persona_id, None)
+        for path in self._paths(persona_id):
+            try:
+                path.unlink(missing_ok=True)
+            except OSError:
+                pass
 
 
 index_registry = IndexRegistry()

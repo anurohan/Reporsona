@@ -101,6 +101,11 @@ class Settings(BaseSettings):
     max_question_chars: int = Field(default=2000)
     rate_limit_per_minute: int = Field(default=60)
 
+    # Authentication. Override in every non-local deployment with a random
+    # value stored outside source control.
+    auth_secret: str = Field(default="development-only-change-me-repersona-auth-secret")
+    auth_token_ttl_seconds: int = Field(default=86400)
+
     @property
     def cors_origins_list(self) -> List[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

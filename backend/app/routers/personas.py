@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Job, KnowledgeEdge, KnowledgeNode, Persona, Source
+from app.models import Job, KnowledgeEdge, KnowledgeNode, Persona, Source, User
 from app.schemas import (
     InsightOut,
     JobOut,
@@ -34,15 +34,17 @@ from app.services import timeline as timeline_service
 from app.services.job_manager import job_manager
 from app.services.source_discovery import slugify
 from app.services.vector_store import index_registry
+from app.services.auth import get_current_user
+from sqlalchemy import or_
 
-router = APIRouter(prefix="/personas", tags=["personas"])
+router = APIRouter(prefix="/personas", tags=["personas"], dependencies=[Depends(get_current_user)])
 
 # hold references so background build tasks are not garbage-collected
 _build_tasks: set[asyncio.Task] = set()
 
 
 @router.post("/create", response_model=PersonaCreateResponse, status_code=201)
-async def create_persona(payload: PersonaCreateRequest, db: Session = Depends(get_db)):
+async def create_persona(payload: PersonaCreateRequest, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     name = payload.name.strip()
     if not name:
         raise HTTPException(status_code=422, detail="name is required")
@@ -50,7 +52,7 @@ async def create_persona(payload: PersonaCreateRequest, db: Session = Depends(ge
     # Only the explicit "Use Demo Persona" action forces the bundled corpus.
     # A normal search/create collects real data live (Wikipedia) via the adapter.
     force_demo = payload.demo
-    persona = Persona(name=name, slug=slugify(name), status="building",
+    persona = Persona(owner_id=user.id, name=name, slug=slugify(name), status="building",
                       is_demo=force_demo)
     db.add(persona)
     db.flush()
@@ -74,7 +76,7 @@ async def create_persona(payload: PersonaCreateRequest, db: Session = Depends(ge
 
 
 @router.post("/resolve", response_model=ResolutionOut)
-async def resolve_identity(payload: ResolveRequest):
+async def resolve_identity(payload: ResolveRequest, user: User = Depends(get_current_user)):
     """Identity resolution (§8): return candidate public figures for a name so
     the user can disambiguate before deep ingestion begins."""
     result = await asyncio.to_thread(identity_service.resolve, payload.name, payload.limit)
@@ -82,13 +84,13 @@ async def resolve_identity(payload: ResolveRequest):
 
 
 @router.get("", response_model=List[PersonaSummary])
-def list_personas(db: Session = Depends(get_db)):
-    rows = db.scalars(select(Persona).order_by(Persona.created_at.desc()))
+def list_personas(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    rows = db.scalars(select(Persona).where(or_(Persona.owner_id == user.id, Persona.is_demo.is_(True))).order_by(Persona.created_at.desc()))
     return [PersonaSummary.model_validate(p) for p in rows]
 
 
 @router.delete("/{persona_id}", status_code=204)
-def delete_persona(persona_id: str, db: Session = Depends(get_db)):
+def delete_persona(persona_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     """Delete a persona and everything derived from it.
 
     Persona relationships (sources, chunks, topics, profile, insights,
@@ -96,8 +98,9 @@ def delete_persona(persona_id: str, db: Session = Depends(get_db)):
     no ORM cascade, so remove them explicitly. The in-memory FAISS index is
     dropped too so a re-created persona doesn't reuse stale vectors.
     """
-    persona = db.get(Persona, persona_id)
-    if not persona:
+    persona = _get_persona(db, persona_id, user)
+    if persona.is_demo and persona.owner_id != user.id:
+        raise HTTPException(status_code=403, detail="Demo personas cannot be deleted by this account.")
         raise HTTPException(status_code=404, detail="Persona not found")
 
     # chat sessions + their messages
@@ -125,16 +128,16 @@ def delete_persona(persona_id: str, db: Session = Depends(get_db)):
     return None
 
 
-def _get_persona(db: Session, persona_id: str) -> Persona:
+def _get_persona(db: Session, persona_id: str, user: User | None = None) -> Persona:
     persona = db.get(Persona, persona_id)
-    if not persona:
+    if not persona or (user and persona.owner_id not in (user.id, None if persona.is_demo else user.id)):
         raise HTTPException(status_code=404, detail="Persona not found")
     return persona
 
 
 @router.get("/{persona_id}", response_model=PersonaDetail)
-def get_persona(persona_id: str, db: Session = Depends(get_db)):
-    persona = _get_persona(db, persona_id)
+def get_persona(persona_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    persona = _get_persona(db, persona_id, user)
     detail = PersonaDetail.model_validate(persona)
     detail.source_count = db.query(Source).filter(Source.persona_id == persona.id).count()
     if persona.profile:
@@ -144,8 +147,8 @@ def get_persona(persona_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/{persona_id}/sources", response_model=List[SourceOut])
-def get_sources(persona_id: str, source_type: str | None = None, db: Session = Depends(get_db)):
-    _get_persona(db, persona_id)
+def get_sources(persona_id: str, source_type: str | None = None, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    _get_persona(db, persona_id, user)
     q = select(Source).where(Source.persona_id == persona_id)
     if source_type:
         q = q.where(Source.source_type == source_type)
@@ -153,20 +156,20 @@ def get_sources(persona_id: str, source_type: str | None = None, db: Session = D
 
 
 @router.get("/{persona_id}/topics", response_model=List[TopicOut])
-def get_topics(persona_id: str, db: Session = Depends(get_db)):
-    persona = _get_persona(db, persona_id)
+def get_topics(persona_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    persona = _get_persona(db, persona_id, user)
     return [TopicOut.model_validate(t) for t in sorted(persona.topics, key=lambda t: t.weight, reverse=True)]
 
 
 @router.get("/{persona_id}/insights", response_model=List[InsightOut])
-def get_insights(persona_id: str, db: Session = Depends(get_db)):
-    persona = _get_persona(db, persona_id)
+def get_insights(persona_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    persona = _get_persona(db, persona_id, user)
     return [InsightOut.model_validate(i) for i in persona.insights]
 
 
 @router.get("/{persona_id}/knowledge-graph", response_model=KnowledgeGraphOut)
-def get_knowledge_graph(persona_id: str, db: Session = Depends(get_db)):
-    _get_persona(db, persona_id)
+def get_knowledge_graph(persona_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    _get_persona(db, persona_id, user)
     nodes = db.scalars(select(KnowledgeNode).where(KnowledgeNode.persona_id == persona_id))
     edges = db.scalars(select(KnowledgeEdge).where(KnowledgeEdge.persona_id == persona_id))
     return KnowledgeGraphOut(
@@ -176,14 +179,14 @@ def get_knowledge_graph(persona_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/{persona_id}/timeline", response_model=List[TimelineEventOut])
-def get_timeline(persona_id: str, db: Session = Depends(get_db)):
+def get_timeline(persona_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     """Documented timeline (§12) derived from lifespan + source dates."""
-    persona = _get_persona(db, persona_id)
+    persona = _get_persona(db, persona_id, user)
     return [TimelineEventOut(**e) for e in timeline_service.build_timeline(db, persona)]
 
 
 @router.get("/{persona_id}/coverage", response_model=CoverageOut)
-def get_coverage(persona_id: str, db: Session = Depends(get_db)):
+def get_coverage(persona_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     """Knowledge coverage estimates + suggested next searches (§21)."""
-    persona = _get_persona(db, persona_id)
+    persona = _get_persona(db, persona_id, user)
     return CoverageOut(**coverage_service.estimate_coverage(db, persona))

@@ -14,6 +14,29 @@ class ORMModel(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
 
 
+class RegisterRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=255)
+    password: str = Field(min_length=12, max_length=256)
+    display_name: str = Field(default="", max_length=255)
+
+
+class LoginRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=255)
+    password: str = Field(min_length=1, max_length=256)
+
+
+class UserOut(ORMModel):
+    id: str
+    email: str
+    display_name: str = ""
+
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserOut
+
+
 # --------------------------------------------------------------------------- #
 # Personas
 # --------------------------------------------------------------------------- #
@@ -335,3 +358,116 @@ class UploadResult(BaseModel):
     chunks_added: int
     extraction: str  # text | pdf | ocr | whisper
     note: str = ""
+
+
+# ---------------------------------------------------------------------------
+# Virtual Friend
+# ---------------------------------------------------------------------------
+
+class VirtualFriendCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    description: str = ""
+    avatar_color: str = "#6366f1"
+
+
+class VirtualFriendSummary(ORMModel):
+    id: str
+    name: str
+    slug: str
+    description: str = ""
+    avatar_color: str = "#6366f1"
+    status: str
+    personality: dict = {}
+    total_messages: int = 0
+    total_transcripts: int = 0
+
+
+class TranscriptUploadResult(BaseModel):
+    transcript_id: str
+    friend_id: str
+    filename: str
+    format: str
+    speakers: list[str]
+    target_speaker: str
+    message_count: int
+    chunks_added: int
+    parse_errors: list[str] = []
+    note: str = ""
+
+
+class ImportPreviewOut(BaseModel):
+    import_id: str
+    platform: str
+    filename: str
+    conversation_id: str
+    participants: list[str] = []
+    message_count: int = 0
+    sample_messages: list[dict[str, Any]] = []
+    parse_errors: list[str] = []
+    source_metadata: dict[str, Any] = {}
+    status: str = "preview"
+
+
+class ImportConfirmRequest(BaseModel):
+    target_speaker: str = Field(min_length=1, max_length=512)
+    friend_id: Optional[str] = None
+    friend_name: Optional[str] = Field(default=None, max_length=200)
+    description: str = ""
+
+
+class ImportConfirmOut(BaseModel):
+    import_id: str
+    friend_id: str
+    transcript_id: str
+    target_speaker: str
+    message_count: int
+    chunks_added: int
+    status: str
+
+
+class VFSpeakerSelectRequest(BaseModel):
+    transcript_id: str
+    target_speaker: str
+
+
+class VFChatRequest(BaseModel):
+    friend_id: str
+    message: str = Field(min_length=1)
+    session_id: Optional[str] = None
+    history: list[ChatTurn] = []
+    evidence_mode: bool = True
+    language: str = "en"
+
+
+class VFChatResponse(BaseModel):
+    session_id: str
+    message: str
+    evidence: list[EvidenceItem] = []
+    evidence_coverage: str = "LOW"
+    limitations: list[str] = []
+    provider: str = "demo"
+    confidence: str = "LOW"  # HIGH | MEDIUM | LOW | INSUFFICIENT
+    reasoning_note: str = ""
+
+
+class VFMemoryOut(ORMModel):
+    id: str
+    label: str
+    detail: str = ""
+    classification: str
+    evidence_chunk_ids: list[str] = []
+
+
+class VFConversationOut(ORMModel):
+    id: str
+    friend_id: str
+    title: str
+    message_count: int = 0
+
+
+class VFMessageOut(ORMModel):
+    id: str
+    role: str
+    content: str
+    evidence_coverage: str = ""
+    evidence: list[Any] = []

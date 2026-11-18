@@ -18,12 +18,13 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Chunk, Persona
+from app.models import Chunk, Persona, User
 from app.schemas import SourceOut, SourceTextRequest, UploadResult
 from app.services import ingest, media
 from app.services.storage import storage
+from app.services.auth import get_current_user
 
-router = APIRouter(prefix="/personas", tags=["uploads"])
+router = APIRouter(prefix="/personas", tags=["uploads"], dependencies=[Depends(get_current_user)])
 
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB
 
@@ -33,9 +34,9 @@ IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp", ".tif", ".tiff", ".bmp"}
 AUDIO_EXT = {".mp3", ".wav", ".m4a", ".flac", ".ogg", ".mp4", ".webm", ".mov"}
 
 
-def _persona(db: Session, persona_id: str) -> Persona:
+def _persona(db: Session, persona_id: str, user: User) -> Persona:
     p = db.get(Persona, persona_id)
-    if not p:
+    if not p or (p.owner_id != user.id and not p.is_demo):
         raise HTTPException(status_code=404, detail="Persona not found")
     return p
 
@@ -45,8 +46,8 @@ def _chunk_count(db: Session, source_id: str) -> int:
 
 
 @router.post("/{persona_id}/sources/text", response_model=UploadResult)
-def add_text(persona_id: str, payload: SourceTextRequest, db: Session = Depends(get_db)):
-    persona = _persona(db, persona_id)
+def add_text(persona_id: str, payload: SourceTextRequest, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    persona = _persona(db, persona_id, user)
     src = ingest.add_text_source(
         db, persona,
         title=payload.title or "Pasted text",
@@ -69,8 +70,9 @@ async def upload_file(
     file: UploadFile = File(...),
     title: str = Form(""),
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
-    persona = _persona(db, persona_id)
+    persona = _persona(db, persona_id, user)
     data = await file.read()
     if not data:
         raise HTTPException(status_code=422, detail="Empty file.")

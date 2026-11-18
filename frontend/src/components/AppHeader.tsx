@@ -1,14 +1,25 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowUpRight, Command, Orbit } from "lucide-react";
+import { ArrowUpRight, Command, Heart, Orbit } from "lucide-react";
+import { clearAuth, logout } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 interface AppHeaderProps {
   compact?: boolean;
 }
 
 export default function AppHeader({ compact = false }: AppHeaderProps) {
+  const router = useRouter();
+  const [authenticated, setAuthenticated] = useState(false);
+  useEffect(() => setAuthenticated(Boolean(localStorage.getItem("repersona_access_token"))), []);
+  async function signOut() {
+    try { await logout(); } catch { /* token may already be expired */ }
+    clearAuth();
+    router.push("/auth");
+  }
   return (
     <header className="app-header">
       <Link href="/" className="brand-mark focusable" aria-label="RePersona home">
@@ -23,6 +34,10 @@ export default function AppHeader({ compact = false }: AppHeaderProps) {
       {!compact && (
         <nav className="hidden items-center gap-1 md:flex" aria-label="Primary navigation">
           <Link className="header-link focusable" href="/explore">Explore archive</Link>
+          <Link className="header-link focusable" href="/virtual-friends">
+            <Heart className="mr-1 inline h-3.5 w-3.5" aria-hidden />
+            Virtual Friends
+          </Link>
           <Link className="header-link focusable" href="/settings">System status</Link>
         </nav>
       )}
@@ -42,6 +57,7 @@ export default function AppHeader({ compact = false }: AppHeaderProps) {
         <Link href="/explore" className="header-cta focusable">
           Open archive <ArrowUpRight className="h-3.5 w-3.5" />
         </Link>
+        {authenticated && <button type="button" onClick={signOut} className="header-link focusable">Sign out</button>}
       </div>
     </header>
   );

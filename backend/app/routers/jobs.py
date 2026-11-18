@@ -8,26 +8,29 @@ from sqlalchemy.orm import Session
 from sse_starlette.sse import EventSourceResponse
 
 from app.database import SessionLocal, get_db
-from app.models import Job
+from app.models import Job, Persona, User
 from app.schemas import JobOut
 from app.services.job_manager import job_manager
+from app.services.auth import get_current_user, get_current_user_from_query
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 
 @router.get("/{job_id}", response_model=JobOut)
-def get_job(job_id: str, db: Session = Depends(get_db)):
+def get_job(job_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     job = db.get(Job, job_id)
-    if not job:
+    persona = db.get(Persona, job.persona_id) if job else None
+    if not job or not persona or (persona.owner_id != user.id and not persona.is_demo):
         raise HTTPException(status_code=404, detail="Job not found")
     return JobOut.model_validate(job)
 
 
-def _snapshot(job_id: str) -> dict | None:
+def _snapshot(job_id: str, user_id: str) -> dict | None:
     db = SessionLocal()
     try:
         job = db.get(Job, job_id)
-        if not job:
+        persona = db.get(Persona, job.persona_id) if job else None
+        if not job or not persona or (persona.owner_id != user_id and not persona.is_demo):
             return None
         return {
             "event": "SNAPSHOT",
@@ -45,8 +48,8 @@ def _snapshot(job_id: str) -> dict | None:
 
 
 @router.get("/{job_id}/stream")
-async def stream_job(job_id: str, request: Request):
-    snap = _snapshot(job_id)
+async def stream_job(job_id: str, request: Request, user: User = Depends(get_current_user_from_query)):
+    snap = _snapshot(job_id, user.id)
     if snap is None:
         raise HTTPException(status_code=404, detail="Job not found")
 
@@ -69,7 +72,7 @@ async def stream_job(job_id: str, request: Request):
                     event = await asyncio.wait_for(queue.get(), timeout=15.0)
                 except asyncio.TimeoutError:
                     # keep-alive; also re-check terminal state from DB
-                    cur = _snapshot(job_id)
+                    cur = _snapshot(job_id, user.id)
                     yield {"event": "PING", "data": json.dumps({"progress": cur["progress"] if cur else 0})}
                     if cur and cur["status"] in ("completed", "failed"):
                         break
