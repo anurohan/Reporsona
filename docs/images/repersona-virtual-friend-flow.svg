@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" role="img" aria-labelledby="title desc">
+  <title id="title">Animated Virtual Friend import flow</title>
+  <desc id="desc">An authorized chat export is previewed, a target speaker is selected, private messages are indexed, and evidence-grounded chat is enabled.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#071523"/><stop offset="1" stop-color="#21143b"/></linearGradient>
+    <linearGradient id="flow" x1="0" x2="1"><stop stop-color="#10b981"/><stop offset="1" stop-color="#818cf8"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <style>.h{font:700 22px ui-sans-serif,system-ui,sans-serif;fill:#f8fafc}.s{font:14px ui-sans-serif,system-ui,sans-serif;fill:#94a3b8}.k{font:600 12px ui-sans-serif,system-ui,sans-serif;fill:#6ee7b7;letter-spacing:2px}.c{fill:#101d34;stroke:#31546a;stroke-width:2}.n{fill:#123c47;stroke:#34d399;stroke-width:2}</style>
+  </defs>
+  <rect width="1200" height="560" rx="26" fill="url(#bg)"/>
+  <text x="60" y="58" class="k">PRIVATE DATA / VIRTUAL FRIENDS</text>
+  <text x="60" y="98" class="h">Import once, keep the evidence boundary visible</text>
+  <text x="60" y="126" class="s">The target speaker is selected before private messages enter the retrieval index.</text>
+  <path d="M130 275 H1065" stroke="#29445a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M130 275 H1065" stroke="url(#flow)" stroke-width="5" stroke-linecap="round" stroke-dasharray="85 850"><animate attributeName="stroke-dashoffset" from="935" to="0" dur="3.8s" repeatCount="indefinite"/></path>
+  <circle cy="275" r="10" fill="#6ee7b7" filter="url(#glow)"><animate attributeName="cx" values="130;1065;130" dur="7.6s" repeatCount="indefinite"/></circle>
+  <g transform="translate(50 190)"><rect width="190" height="170" rx="18" class="c"/><circle cx="95" cy="48" r="25" class="n"/><text x="95" y="55" text-anchor="middle" class="h">⇧</text><text x="95" y="99" text-anchor="middle" class="h" font-size="17">Upload</text><text x="95" y="126" text-anchor="middle" class="s">authorized export</text></g>
+  <g transform="translate(285 190)"><rect width="190" height="170" rx="18" class="c"/><circle cx="95" cy="48" r="25" class="n"/><text x="95" y="55" text-anchor="middle" class="h">⌑</text><text x="95" y="99" text-anchor="middle" class="h" font-size="17">Preview</text><text x="95" y="126" text-anchor="middle" class="s">participants + format</text></g>
+  <g transform="translate(520 190)"><rect width="190" height="170" rx="18" class="c"/><circle cx="95" cy="48" r="25" class="n"/><text x="95" y="55" text-anchor="middle" class="h">✓</text><text x="95" y="99" text-anchor="middle" class="h" font-size="17">Select</text><text x="95" y="126" text-anchor="middle" class="s">target speaker</text></g>
+  <g transform="translate(755 190)"><rect width="190" height="170" rx="18" class="c"/><circle cx="95" cy="48" r="25" class="n"/><text x="95" y="55" text-anchor="middle" class="h">▦</text><text x="95" y="99" text-anchor="middle" class="h" font-size="17">Index</text><text x="95" y="126" text-anchor="middle" class="s">private evidence</text></g>
+  <g transform="translate(990 190)"><rect width="160" height="170" rx="18" class="c"/><circle cx="80" cy="48" r="25" class="n"/><text x="80" y="55" text-anchor="middle" class="h">✦</text><text x="80" y="99" text-anchor="middle" class="h" font-size="17">Chat</text><text x="80" y="126" text-anchor="middle" class="s">abstains if weak</text></g>
+  <rect x="60" y="424" width="1080" height="62" rx="16" fill="#0a1b29" stroke="#28556a"/>
+  <circle cx="88" cy="455" r="7" fill="#34d399"><animate attributeName="opacity" values="1;.2;1" dur="1.3s" repeatCount="indefinite"/></circle><text x="110" y="461" class="s">Privacy boundary: owner-scoped · source-linked · simulated, not the real person</text>
+</svg>

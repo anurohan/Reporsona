@@ -14,6 +14,20 @@
 
 _The animation above shows the live product flow: discover sources, analyze them, retrieve evidence, and return a guarded answer._
 
+### Working flows
+
+<p align="center">
+  <img src="./docs/images/repersona-persona-journey.svg" alt="Animated historical persona user journey" width="1200" />
+</p>
+
+_Public persona journey: enter a name, resolve the identity, run the reconstruction pipeline, explore the profile, and open a source-backed chat._
+
+<p align="center">
+  <img src="./docs/images/repersona-virtual-friend-flow.svg" alt="Animated Virtual Friend import flow" width="1200" />
+</p>
+
+_Virtual Friend journey: upload an authorized export, preview participants, choose the target speaker, index private evidence, and chat with abstention when coverage is weak._
+
 ## Product overview
 
 RePersona combines source discovery, multimodal ingestion, retrieval-augmented generation, temporal guardrails, and transparent evidence display in one local-first application.

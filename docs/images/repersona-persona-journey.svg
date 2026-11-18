@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+  <title id="title">Animated historical persona journey</title>
+  <desc id="desc">A user enters a public figure, RePersona resolves the identity, builds an evidence graph, and opens a source-backed chat.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#081126"/><stop offset="1" stop-color="#20113e"/></linearGradient>
+    <linearGradient id="flow" x1="0" x2="1"><stop stop-color="#38bdf8"/><stop offset="1" stop-color="#c084fc"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <style>.h{font:700 22px ui-sans-serif,system-ui,sans-serif;fill:#f8fafc}.s{font:14px ui-sans-serif,system-ui,sans-serif;fill:#94a3b8}.k{font:600 12px ui-sans-serif,system-ui,sans-serif;fill:#a5b4fc;letter-spacing:2px}.c{fill:#111b38;stroke:#33456f;stroke-width:2}.n{fill:#1d2a58;stroke:#6366f1;stroke-width:2}</style>
+  </defs>
+  <rect width="1200" height="520" rx="26" fill="url(#bg)"/>
+  <text x="60" y="58" class="k">PUBLIC PERSONA / USER JOURNEY</text>
+  <text x="60" y="98" class="h">From a name to a transparent conversation</text>
+  <text x="60" y="126" class="s">Identity resolution prevents the wrong person from entering the evidence pipeline.</text>
+  <path d="M130 270 H1070" stroke="#344267" stroke-width="4" stroke-linecap="round"/>
+  <path d="M130 270 H1070" stroke="url(#flow)" stroke-width="5" stroke-linecap="round" stroke-dasharray="80 860"><animate attributeName="stroke-dashoffset" from="940" to="0" dur="3.5s" repeatCount="indefinite"/></path>
+  <circle cy="270" r="10" fill="#67e8f9" filter="url(#glow)"><animate attributeName="cx" values="130;1070;130" dur="7s" repeatCount="indefinite"/></circle>
+  <g transform="translate(50 190)"><rect width="160" height="160" rx="18" class="c"/><circle cx="80" cy="50" r="25" class="n"/><text x="80" y="57" text-anchor="middle" class="h">⌕</text><text x="80" y="100" text-anchor="middle" class="h" font-size="17">Ask</text><text x="80" y="126" text-anchor="middle" class="s">“Osho”</text></g>
+  <g transform="translate(275 190)"><rect width="180" height="160" rx="18" class="c"/><circle cx="90" cy="50" r="25" class="n"/><text x="90" y="57" text-anchor="middle" class="h">✓</text><text x="90" y="100" text-anchor="middle" class="h" font-size="17">Resolve</text><text x="90" y="126" text-anchor="middle" class="s">candidate identity</text></g>
+  <g transform="translate(520 190)"><rect width="180" height="160" rx="18" class="c"/><circle cx="90" cy="50" r="25" class="n"/><text x="90" y="57" text-anchor="middle" class="h">∑</text><text x="90" y="100" text-anchor="middle" class="h" font-size="17">Reconstruct</text><text x="90" y="126" text-anchor="middle" class="s">15-stage pipeline</text></g>
+  <g transform="translate(765 190)"><rect width="180" height="160" rx="18" class="c"/><circle cx="90" cy="50" r="25" class="n"/><text x="90" y="57" text-anchor="middle" class="h">◇</text><text x="90" y="100" text-anchor="middle" class="h" font-size="17">Explore</text><text x="90" y="126" text-anchor="middle" class="s">sources + graph</text></g>
+  <g transform="translate(1010 190)"><rect width="140" height="160" rx="18" class="c"/><circle cx="70" cy="50" r="25" class="n"/><text x="70" y="57" text-anchor="middle" class="h">↗</text><text x="70" y="100" text-anchor="middle" class="h" font-size="17">Chat</text><text x="70" y="126" text-anchor="middle" class="s">with proof</text></g>
+  <rect x="60" y="410" width="1080" height="54" rx="16" fill="#0b1530" stroke="#293b67"/>
+  <circle cx="88" cy="437" r="7" fill="#34d399"><animate attributeName="opacity" values="1;.2;1" dur="1.3s" repeatCount="indefinite"/></circle><text x="110" y="443" class="s">Pipeline status: identity confirmed · sources indexed · evidence ready</text>
+</svg>
